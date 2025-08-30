@@ -4,6 +4,7 @@ const ContactSection: React.FC = () => {
   const [formData, setFormData] = useState({
     asunto: "",
     correo: "",
+    telefono: "", // ✅ nuevo campo
     area: "",
     mensaje: ""
   });
@@ -32,7 +33,7 @@ const ContactSection: React.FC = () => {
 
       if (response.ok) {
         alert("Mensaje enviado correctamente ✅");
-        setFormData({ asunto: "", correo: "", area: "", mensaje: "" });
+        setFormData({ asunto: "", correo: "", telefono: "", area: "", mensaje: "" });
       } else {
         alert("Error al enviar el formulario ❌");
       }
@@ -45,7 +46,7 @@ const ContactSection: React.FC = () => {
   return (
     <section id="contacto" className="py-16 bg-gray-50">
       <div className="max-w-2xl mx-auto px-5 md:px-8">
-        
+
         {/* Título */}
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
@@ -56,18 +57,17 @@ const ContactSection: React.FC = () => {
 
         {/* Formulario */}
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-md p-8">
-          
+
           {/* Asunto */}
           <div className="mb-6">
-            <label className="block text-gray-700 font-semibold mb-3">
-              Asunto
-            </label>
+            <label className="block text-gray-700 font-semibold mb-3">Asunto</label>
             <input
               type="text"
               name="asunto"
               value={formData.asunto}
               onChange={handleInputChange}
               placeholder="Asunto"
+              autoComplete="off"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none 
                          focus:ring-2 focus:ring-teal-500 focus:border-transparent text-black placeholder-gray-400"
               required
@@ -77,9 +77,7 @@ const ContactSection: React.FC = () => {
 
           {/* Correo */}
           <div className="mb-6">
-            <label className="block text-gray-700 font-semibold mb-3">
-              Correo del Cliente
-            </label>
+            <label className="block text-gray-700 font-semibold mb-3">Correo del Cliente</label>
             <input
               type="email"
               name="correo"
@@ -92,11 +90,24 @@ const ContactSection: React.FC = () => {
             />
           </div>
 
+          {/* Teléfono */}
+          <div className="mb-6">
+            <label className="block text-gray-700 font-semibold mb-3">Teléfono o Celular</label>
+            <input
+              type="tel"
+              name="telefono"
+              value={formData.telefono}
+              onChange={handleInputChange}
+              placeholder="Ej: +51 987654321"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none 
+                         focus:ring-2 focus:ring-teal-500 focus:border-transparent text-black placeholder-gray-400"
+              required
+            />
+          </div>
+
           {/* Área */}
           <div className="mb-6">
-            <label className="block text-gray-700 font-semibold mb-3">
-              Área de Interés
-            </label>
+            <label className="block text-gray-700 font-semibold mb-3">Área de Interés</label>
             <select
               name="area"
               value={formData.area}
@@ -116,9 +127,7 @@ const ContactSection: React.FC = () => {
 
           {/* Mensaje */}
           <div className="mb-8">
-            <label className="block text-gray-700 font-semibold mb-3">
-              Mensaje
-            </label>
+            <label className="block text-gray-700 font-semibold mb-3">Mensaje</label>
             <textarea
               name="mensaje"
               value={formData.mensaje}
@@ -145,9 +154,7 @@ const ContactSection: React.FC = () => {
 
         {/* Footer */}
         <div className="text-center mt-12">
-          <p className="text-gray-600 text-sm">
-            Devíoz © 2025. All Rights Reserved.
-          </p>
+          <p className="text-gray-600 text-sm">Devíoz © 2025. All Rights Reserved.</p>
         </div>
       </div>
     </section>

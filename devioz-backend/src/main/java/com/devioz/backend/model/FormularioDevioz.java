@@ -18,8 +18,11 @@ public class FormularioDevioz {
     @Column(nullable = false)
     private String correo;
 
+    @Column(length = 20, nullable = false)
+    private String telefono; // ✅ Nuevo campo
+
     @Column(length = 50, nullable = false)
-    private String area;  // ✅ coincide con frontend
+    private String area;
 
     @Column(length = 500, nullable = false)
     private String mensaje;
