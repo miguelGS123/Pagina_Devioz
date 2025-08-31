@@ -6,6 +6,8 @@ import com.devioz.backend.service.EmailService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.mail.MessagingException;
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -25,9 +27,12 @@ public class FormularioController {
     public ResponseEntity<FormularioDevioz> guardarFormulario(@RequestBody FormularioDevioz formulario) {
         FormularioDevioz guardado = formularioRepository.save(formulario);
 
-        // Enviar correos
-        emailService.enviarCorreoConfirmacion(guardado);
-        emailService.notificarAdmin(guardado);
+        try {
+            emailService.enviarCorreoConfirmacion(guardado);
+            emailService.notificarAdmin(guardado);
+        } catch (MessagingException | IOException e) {
+            e.printStackTrace();
+        }
 
         return ResponseEntity.ok(guardado);
     }
