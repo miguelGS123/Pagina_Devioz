@@ -5,6 +5,7 @@ interface ProductsHeaderProps {
   onSelectCategory: (category: string) => void;
   onLoginClick: () => void;
   onCartClick: () => void;
+  cartCount: number;
 }
 
 const categories = ["Todo", "Teclados", "Mouse", "Monitores", "Escritorios"];
@@ -14,6 +15,7 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
   onSelectCategory,
   onLoginClick,
   onCartClick,
+  cartCount,
 }) => {
   return (
     <div className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -35,18 +37,24 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
       </div>
 
       {/* Botones Login y Carrito */}
-      <div className="flex gap-4">
+      <div className="flex gap-4 relative">
         <button
           onClick={onLoginClick}
           className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors"
         >
           Login
         </button>
+
         <button
           onClick={onCartClick}
-          className="px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600 transition-colors"
+          className="px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600 transition-colors relative"
         >
           Carrito
+          {cartCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              {cartCount}
+            </span>
+          )}
         </button>
       </div>
     </div>
