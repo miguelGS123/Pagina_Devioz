@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,12 +20,10 @@ const Navbar: React.FC = () => {
 
   // Detectar si es móvil y scroll
   useEffect(() => {
-    // Detectar tamaño de pantalla
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 1024); // lg breakpoint de Tailwind
     };
 
-    // Detectar scroll solo si no es móvil con menú abierto
     const handleScroll = () => {
       if (window.scrollY > 50) {
         setIsScrolled(true);
@@ -33,35 +32,32 @@ const Navbar: React.FC = () => {
       }
     };
 
-    // Verificar inicialmente y agregar listener de resize
     checkMobile();
-    window.addEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
 
-    // Solo agregar scroll listener si no es móvil con menú abierto
     if (!(isMobile && isOpen)) {
       window.addEventListener("scroll", handleScroll);
     }
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener('resize', checkMobile);
+      window.removeEventListener("resize", checkMobile);
     };
-  }, [isMobile, isOpen]); // Dependencias
+  }, [isMobile, isOpen]);
 
   return (
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${
-        // Condicional: si es móvil y menú abierto, fondo sólido; sino, comportamiento normal
-        (isMobile && isOpen) 
-          ? "bg-gray-900" // Fondo sólido cuando menú abierto en móvil
-          : isScrolled 
-            ? "bg-gray-900/80 backdrop-blur-md" 
+        (isMobile && isOpen)
+          ? "bg-gray-900"
+          : isScrolled
+            ? "bg-gray-900/80 backdrop-blur-md"
             : "bg-transparent"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="h-16 flex items-center justify-between">
-          
+
           {/* Logo */}
           <div className="flex-shrink-0">
             <a href="#inicio">
@@ -81,6 +77,11 @@ const Navbar: React.FC = () => {
               <li><a href="#caracteristicas" className="hover:text-teal-300 transition-colors py-2">CARACTERÍSTICAS</a></li>
               <li><a href="#portafolio" className="hover:text-teal-300 transition-colors py-2">PORTAFOLIO</a></li>
               <li><a href="#ventajas" className="hover:text-teal-300 transition-colors py-2">VENTAJAS</a></li>
+              <li>
+                <Link to="/productos" className="hover:text-teal-300 transition-colors py-2">
+                  PRODUCTOS
+                </Link>
+              </li>
               <li><a href="#contacto" className="hover:text-teal-300 transition-colors py-2">CONTÁCTANOS</a></li>
             </ul>
           </nav>
@@ -120,7 +121,7 @@ const Navbar: React.FC = () => {
             ></div>
             <nav className="fixed right-0 top-0 h-full w-80 bg-gray-900 shadow-2xl z-50 transform transition-transform">
               <div className="flex flex-col h-full p-6 bg-gray-900">
-                
+
                 {/* Botón cerrar */}
                 <div className="flex justify-end mb-8">
                   <button
@@ -144,8 +145,8 @@ const Navbar: React.FC = () => {
                 {/* Enlaces de navegación */}
                 <ul className="flex flex-col gap-4 text-white font-medium text-lg">
                   <li>
-                    <a 
-                      href="#inicio" 
+                    <a
+                      href="#inicio"
                       onClick={() => setIsOpen(false)}
                       className="block py-3 px-4 hover:text-teal-300 transition-colors border-b border-gray-700"
                     >
@@ -153,8 +154,8 @@ const Navbar: React.FC = () => {
                     </a>
                   </li>
                   <li>
-                    <a 
-                      href="#servicios" 
+                    <a
+                      href="#servicios"
                       onClick={() => setIsOpen(false)}
                       className="block py-3 px-4 hover:text-teal-300 transition-colors border-b border-gray-700"
                     >
@@ -162,8 +163,8 @@ const Navbar: React.FC = () => {
                     </a>
                   </li>
                   <li>
-                    <a 
-                      href="#caracteristicas" 
+                    <a
+                      href="#caracteristicas"
                       onClick={() => setIsOpen(false)}
                       className="block py-3 px-4 hover:text-teal-300 transition-colors border-b border-gray-700"
                     >
@@ -171,8 +172,8 @@ const Navbar: React.FC = () => {
                     </a>
                   </li>
                   <li>
-                    <a 
-                      href="#portafolio" 
+                    <a
+                      href="#portafolio"
                       onClick={() => setIsOpen(false)}
                       className="block py-3 px-4 hover:text-teal-300 transition-colors border-b border-gray-700"
                     >
@@ -180,8 +181,8 @@ const Navbar: React.FC = () => {
                     </a>
                   </li>
                   <li>
-                    <a 
-                      href="#ventajas" 
+                    <a
+                      href="#ventajas"
                       onClick={() => setIsOpen(false)}
                       className="block py-3 px-4 hover:text-teal-300 transition-colors border-b border-gray-700"
                     >
@@ -189,8 +190,17 @@ const Navbar: React.FC = () => {
                     </a>
                   </li>
                   <li>
-                    <a 
-                      href="#contacto" 
+                    <Link
+                      to="/productos"
+                      onClick={() => setIsOpen(false)}
+                      className="block py-3 px-4 hover:text-teal-300 transition-colors border-b border-gray-700"
+                    >
+                      PRODUCTOS
+                    </Link>
+                  </li>
+                  <li>
+                    <a
+                      href="#contacto"
                       onClick={() => setIsOpen(false)}
                       className="block py-3 px-4 hover:text-teal-300 transition-colors border-b border-gray-700"
                     >

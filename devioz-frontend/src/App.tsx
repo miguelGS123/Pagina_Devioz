@@ -1,4 +1,4 @@
-// import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import FooterSection from "./components/FooterSection";
@@ -12,16 +12,15 @@ import SocialSidebar from "./components/SocialSidebar";
 import ScrollToTop from "./components/ScrollToTop";
 import ChatButton from "./components/ChatButton";
 
-function App() {
+// Nueva página de productos
+import ProductsPage from "./pages/Products/ProductsPage";
+
+// Componente para la Landing (tu contenido actual)
+const Landing: React.FC = () => {
   return (
-    <div className="App">
-      {/* Sidebar flotante */}
-      <SocialSidebar />
-
-      {/* Botón scroll-to-top */}
+    <>
+      <SocialSidebar />   
       <ScrollToTop />
-
-      {/* Contenido de la página */}
       <Navbar />
       <Hero />
       <FooterSection />
@@ -31,8 +30,21 @@ function App() {
       <FooterSection2 />
       <VentajasSection />
       <ContactSection />
-       <ChatButton />
-    </div>
+      <ChatButton />
+    </>
+  );
+};
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        {/* Ruta principal de la landing */}
+        <Route path="/" element={<Landing />} />
+        {/* Ruta de productos con login, ventas, etc */}
+        <Route path="/productos" element={<ProductsPage />} />
+      </Routes>
+    </Router>
   );
 }
 
