@@ -1,16 +1,25 @@
 import React from "react";
 import ProductCard from "./ProductCard";
 
-const products = [
-  { id: 1, name: "Laptop Gamer", price: 2500, image: "/laptop1.jpg" },
-  { id: 2, name: "Auriculares Bluetooth", price: 150, image: "/headphones.jpg" },
-  { id: 3, name: "Smartphone Pro", price: 1200, image: "/smartphone.jpg" },
+interface ProductsGridProps {
+  selectedCategory: string;
+}
+
+const allProducts = [
+  { id: 1, name: "Teclado Mecánico", price: 120, category: "Teclados", image: "/productos/teclado01.png" },
+  // Más productos aquí, por ejemplo:
+  // { id: 2, name: "Mouse Gamer", price: 60, category: "Mouse", image: "/productos/mouse01.png" },
 ];
 
-const ProductsGrid: React.FC = () => {
+const ProductsGrid: React.FC<ProductsGridProps> = ({ selectedCategory }) => {
+  const filteredProducts =
+    selectedCategory === "Todo"
+      ? allProducts
+      : allProducts.filter((p) => p.category === selectedCategory);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-      {products.map((product) => (
+      {filteredProducts.map((product) => (
         <ProductCard
           key={product.id}
           name={product.name}
