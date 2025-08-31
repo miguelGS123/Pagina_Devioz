@@ -1,67 +1,69 @@
 package com.devioz.backend.service;
 
 import com.devioz.backend.model.FormularioDevioz;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 
 @Service
 public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${spring.mail.username}")
-    private String remitente; // tu correo configurado en application.properties
-
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
 
-    // ✅ Correo de confirmación al usuario
-    public void enviarCorreoConfirmacion(FormularioDevioz formulario) throws MessagingException, IOException {
-        MimeMessage mensaje = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(mensaje, true, "UTF-8");
+    // 📩 Correo de confirmación para el usuario
+    @Async
+    public void enviarCorreoConfirmacion(FormularioDevioz formulario) {
+        try {
+            MimeMessage mensaje = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mensaje, true);
 
-        helper.setTo(formulario.getCorreo());
-        helper.setSubject("Gracias por contactarnos - Devíoz");
-        helper.setFrom(remitente);
+            helper.setTo(formulario.getCorreo());
+            helper.setSubject("Gracias por contactarnos - Devíoz");
 
-        String cuerpo = """
-                <h2>Hola, gracias por contactarnos en Devíoz</h2>
-                <p>Hemos recibido tu consulta sobre: <b>%s</b></p>
-                <p>En breve uno de nuestros asesores se pondrá en contacto contigo.</p>
-                <p>Mira esta imagen relacionada con tu área de interés:</p>
-                <img src='cid:imagenArea' alt='Imagen área' style='max-width:400px; margin-top:10px;'/>
+            String imagen = obtenerImagenPorArea(formulario.getArea());
+
+            String contenidoHtml = """
+                <h2>¡Gracias por contactarte con Devíoz!</h2>
+                <p>Hola, hemos recibido tu solicitud sobre el área: <b>%s</b>.</p>
+                <p>Uno de nuestros asesores se pondrá en contacto contigo muy pronto.</p>
+                <img src="cid:imagenArea" alt="Imagen Área" style="width:400px; margin-top:10px;"/>
                 """.formatted(formulario.getArea());
 
-        helper.setText(cuerpo, true);
+            helper.setText(contenidoHtml, true);
 
-        // Adjuntar imagen según el área
-        String imagenPath = seleccionarImagen(formulario.getArea());
-        if (imagenPath != null) {
-            ClassPathResource imagen = new ClassPathResource(imagenPath);
-            helper.addInline("imagenArea", imagen);
+            // ✅ Adjuntar imagen desde resources/email/
+            if (imagen != null) {
+                ClassPathResource resource = new ClassPathResource("email/" + imagen);
+                helper.addInline("imagenArea", resource);
+            }
+
+            mailSender.send(mensaje);
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
-        mailSender.send(mensaje);
     }
 
-    // ✅ Correo al administrador
-    public void notificarAdmin(FormularioDevioz formulario) throws MessagingException {
-        MimeMessage mensaje = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(mensaje, true, "UTF-8");
+    // 📩 Notificación al admin
+    @Async
+    public void notificarAdmin(FormularioDevioz formulario) {
+        try {
+            MimeMessage mensaje = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mensaje, true);
 
-        helper.setTo("987536362miguel@gmail.com"); // 🔴 cámbialo por tu correo personal
-        helper.setSubject("📩 Nuevo formulario recibido en Devíoz");
-        helper.setFrom(remitente);
+            helper.setTo("987536362miguel@gmail.com"); // tu correo admin
+            helper.setSubject("Nuevo formulario recibido - Devíoz");
 
-        String cuerpo = """
+            String contenido = """
                 <h2>Nuevo formulario recibido</h2>
                 <p><b>Asunto:</b> %s</p>
                 <p><b>Correo:</b> %s</p>
@@ -69,27 +71,30 @@ public class EmailService {
                 <p><b>Área:</b> %s</p>
                 <p><b>Mensaje:</b> %s</p>
                 """.formatted(
-                formulario.getAsunto(),
-                formulario.getCorreo(),
-                formulario.getTelefono(),
-                formulario.getArea(),
-                formulario.getMensaje()
-        );
+                        formulario.getAsunto(),
+                        formulario.getCorreo(),
+                        formulario.getTelefono(),
+                        formulario.getArea(),
+                        formulario.getMensaje()
+                );
 
-        helper.setText(cuerpo, true);
-        mailSender.send(mensaje);
+            helper.setText(contenido, true);
+
+            mailSender.send(mensaje);
+
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
     }
 
-    // ✅ Asignar imagen según el área
-    private String seleccionarImagen(String area) {
-        if (area == null) return null;
-
-        return switch (area.toLowerCase()) {
-            case "desarrollo web" -> "static/email/web.png";
-            case "desarrollo app" -> "static/email/app.png";
-            case "devops" -> "static/email/devops.png";
-            case "aws" -> "static/email/aws.png";
-            case "data" -> "static/email/data.png";
+    // 🔹 Método para asignar imagen según el área
+    private String obtenerImagenPorArea(String area) {
+        return switch (area) {
+            case "Desarrollo Web" -> "web.png";
+            case "Desarrollo App" -> "app.png";
+            case "DevOps" -> "devops.png";
+            case "AWS" -> "aws.png";
+            case "Data" -> "data.png";
             default -> null;
         };
     }

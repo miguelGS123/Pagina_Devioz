@@ -6,13 +6,11 @@ import com.devioz.backend.service.EmailService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.mail.MessagingException;
-import java.io.IOException;
-import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
-@RequestMapping("/api/formulario")
-@CrossOrigin(origins = "http://localhost:5173")
+@RequestMapping("/api")
+@CrossOrigin(origins = "http://localhost:5173") // 👈 ajusta tu frontend aquí
 public class FormularioController {
 
     private final FormularioRepository formularioRepository;
@@ -23,22 +21,24 @@ public class FormularioController {
         this.emailService = emailService;
     }
 
-    @PostMapping
-    public ResponseEntity<FormularioDevioz> guardarFormulario(@RequestBody FormularioDevioz formulario) {
-        FormularioDevioz guardado = formularioRepository.save(formulario);
-
+    @PostMapping("/formulario")
+    public ResponseEntity<String> guardarFormulario(@RequestBody FormularioDevioz formulario) {
         try {
-            emailService.enviarCorreoConfirmacion(guardado);
-            emailService.notificarAdmin(guardado);
-        } catch (MessagingException | IOException e) {
+            // ✅ Guardar en la BD primero
+            formularioRepository.save(formulario);
+
+            // ✅ Enviar correos en segundo plano (no bloquea la respuesta)
+            CompletableFuture.runAsync(() -> {
+                emailService.enviarCorreoConfirmacion(formulario);
+                emailService.notificarAdmin(formulario);
+            });
+
+            // 👉 Responder inmediatamente al frontend
+            return ResponseEntity.ok("Formulario enviado ✅");
+
+        } catch (Exception e) {
             e.printStackTrace();
+            return ResponseEntity.status(500).body("Error al enviar el formulario ❌");
         }
-
-        return ResponseEntity.ok(guardado);
-    }
-
-    @GetMapping
-    public List<FormularioDevioz> listarFormularios() {
-        return formularioRepository.findAll();
     }
 }
