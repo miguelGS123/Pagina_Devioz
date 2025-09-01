@@ -1,36 +1,33 @@
 import React from "react";
+import { motion } from "framer-motion";
 import ProductCard from "./ProductCard";
+import type { Product } from "./ProductsPage";
 
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  image: string;
-  category: string;
-}
-
-interface ProductsGridProps {
-  selectedCategory: string;
+interface Props {
   products: Product[];
-  onAddToCart: (product: Product) => void;
+  onAddToCart: (p: Product) => void;
 }
 
-const ProductsGrid: React.FC<ProductsGridProps> = ({ selectedCategory, products, onAddToCart }) => {
-  const filteredProducts =
-    selectedCategory === "Todo"
-      ? products
-      : products.filter((p) => p.category === selectedCategory);
-
+const ProductsGrid: React.FC<Props> = ({ products, onAddToCart }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-      {filteredProducts.map((product) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          onAddToCart={() => onAddToCart(product)}
-        />
+    <motion.div
+      initial="hidden"
+      animate="show"
+      variants={{
+        hidden: { opacity: 0 },
+        show: {
+          opacity: 1,
+          transition: { staggerChildren: 0.06 }
+        }
+      }}
+      className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+    >
+      {products.map((p) => (
+        <motion.div key={p.id} variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }}>
+          <ProductCard product={p} onAddToCart={() => onAddToCart(p)} />
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 };
 
