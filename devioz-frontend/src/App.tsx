@@ -12,8 +12,9 @@ import SocialSidebar from "./components/SocialSidebar";
 import ScrollToTop from "./components/ScrollToTop";
 import ChatButton from "./components/ChatButton";
 
-// Nueva página de productos
+// Páginas de productos
 import ProductsPage from "./pages/Products/ProductsPage";
+import ProductDetailPage from "./pages/Products/ProductDetailPage"; // 🔹 nueva
 
 // Componente para la Landing (tu contenido actual)
 const Landing: React.FC = () => {
@@ -41,8 +42,12 @@ function App() {
       <Routes>
         {/* Ruta principal de la landing */}
         <Route path="/" element={<Landing />} />
+        
         {/* Ruta de productos con login, ventas, etc */}
         <Route path="/productos" element={<ProductsPage />} />
+        
+        {/* Ruta de detalle de producto */}
+        <Route path="/producto/:id" element={<ProductDetailPage />} />
       </Routes>
     </Router>
   );
