@@ -7,7 +7,7 @@ export interface Product {
   id: string;
   name: string;
   price: number;
-  category: "Laptops" | "Periféricos" | "Accesorios" | "Monitores";
+  category: "Teclados" | "Mouse" | "Monitores" | "Laptops" | "Case" | "Otros";
   rating: number; // 1..5
   image: string;
 }
@@ -17,13 +17,32 @@ export interface CartItem {
   qty: number;
 }
 
-// Datos demo (usa tus imágenes del folder /public)
+// Datos de prueba (usa tus imágenes en /public/productos)
 const PRODUCTS: Product[] = [
-  { id: "p1", name: "Laptop Devioz Pro 14”", price: 2999, category: "Laptops", rating: 5, image: "/imagen-laptop.png" },
-  { id: "p2", name: "Mouse Inalámbrico", price: 89, category: "Periféricos", rating: 4, image: "/imagen-laptop.png" },
-  { id: "p3", name: "Teclado Mecánico RGB", price: 199, category: "Periféricos", rating: 5, image: "/imagen-laptop.png" },
-  { id: "p4", name: "Monitor 27” 144Hz", price: 1199, category: "Monitores", rating: 4, image: "/imagen-laptop.png" },
-  { id: "p5", name: "Base Refrigerante", price: 129, category: "Accesorios", rating: 4, image: "/imagen-laptop.png" },
+  {
+    id: "t1",
+    name: "Teclado Gamer Teros TE-GK650, Español, Multimedia, retro-iluminado, Negro, USB.",
+    price: 58,
+    category: "Teclados",
+    rating: 4,
+    image: "/productos/teclado01.png"
+  },
+  {
+    id: "t2",
+    name: "Teclado de membrana GAMER K500F HP",
+    price: 69.9,
+    category: "Teclados",
+    rating: 5,
+    image: "/productos/teclado02.png"
+  },
+  {
+    id: "t3",
+    name: "MINI TECLADO GAMER DE 1 MANO / CABLE 1.6 METROS / 35 TECLAS / A PRUEBA DE AGUA | YUS",
+    price: 79,
+    category: "Teclados",
+    rating: 4,
+    image: "/productos/teclado03.png"
+  },
 ];
 
 const ProductsPage: React.FC = () => {
@@ -37,7 +56,9 @@ const ProductsPage: React.FC = () => {
     let list = PRODUCTS.filter(p =>
       p.name.toLowerCase().includes(search.toLowerCase())
     );
-    if (category !== "Todos") list = list.filter(p => p.category === (category as Product["category"]));
+    if (category !== "Todos") {
+      list = list.filter(p => p.category === (category as Product["category"]));
+    }
 
     switch (sort) {
       case "price-asc": list = [...list].sort((a, b) => a.price - b.price); break;
@@ -58,7 +79,7 @@ const ProductsPage: React.FC = () => {
       }
       return [...prev, { product, qty: 1 }];
     });
-    // ❌ Se eliminó setCartOpen(true)
+    // ❌ Ya no abrimos el carrito automáticamente
   };
 
   const changeQty = (id: string, qty: number) => {

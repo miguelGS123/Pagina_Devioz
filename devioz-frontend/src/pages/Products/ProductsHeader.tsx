@@ -50,10 +50,12 @@ const ProductsHeader: React.FC<Props> = ({
             className="rounded-xl border px-3 py-2"
           >
             <option>Todos</option>
-            <option>Laptops</option>
-            <option>Periféricos</option>
-            <option>Accesorios</option>
+            <option>Teclados</option>
+            <option>Mouse</option>
             <option>Monitores</option>
+            <option>Laptops</option>
+            <option>Case</option>
+            <option>Otros</option>
           </select>
 
           <select
