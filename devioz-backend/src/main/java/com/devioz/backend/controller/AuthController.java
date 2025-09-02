@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
-@CrossOrigin(origins = "*", allowedHeaders = "*") // habilita CORS para frontend React
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class AuthController {
 
     private final AuthService authService;
@@ -17,37 +17,37 @@ public class AuthController {
         this.authService = authService;
     }
 
-    /**
-     * Endpoint de login
-     * @param request DTO con email y password
-     * @return Token JWT
-     */
+    // Login
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
             String token = authService.login(request.email(), request.password());
             return ResponseEntity.ok(new TokenResponse(token));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales inválidas");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         }
     }
 
-    /**
-     * Endpoint de registro
-     * @param usuario nuevo usuario a registrar
-     * @return Usuario registrado
-     */
+    // Registro
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Usuario usuario) {
         try {
             Usuario savedUser = authService.register(usuario);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body("Error en el registro: " + e.getMessage());
         }
     }
 
-    // ✅ DTOs modernos con record
+    // ✅ Endpoint temporal para debug de password
+    @PostMapping("/check-password")
+    public ResponseEntity<?> checkPassword(@RequestBody CheckPasswordRequest request) {
+        boolean matches = authService.checkPassword(request.email(), request.password());
+        return ResponseEntity.ok("¿Coincide el password? " + matches);
+    }
+
+    // DTOs
     public record LoginRequest(String email, String password) {}
     public record TokenResponse(String token) {}
+    public record CheckPasswordRequest(String email, String password) {}
 }

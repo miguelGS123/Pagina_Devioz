@@ -3,45 +3,46 @@ package com.devioz.backend.service;
 import com.devioz.backend.model.Usuario;
 import com.devioz.backend.repository.UsuarioRepository;
 import com.devioz.backend.security.JwtUtil;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AuthService {
 
-    private final AuthenticationManager authenticationManager;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    public AuthService(AuthenticationManager authenticationManager,
-                       UsuarioRepository usuarioRepository,
+    public AuthService(UsuarioRepository usuarioRepository,
                        PasswordEncoder passwordEncoder,
                        JwtUtil jwtUtil) {
-        this.authenticationManager = authenticationManager;
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
     }
 
-    public String login(String email, String password) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(email, password)
-        );
-
+    // Login: verifica password y devuelve token
+    public String login(String email, String rawPassword) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        if (!passwordEncoder.matches(rawPassword, usuario.getPassword())) {
+            throw new RuntimeException("Credenciales inválidas");
+        }
 
         return jwtUtil.generateToken(usuario.getEmail(), usuario.getRol().name());
     }
 
+    // Registro: encripta password y guarda usuario
     public Usuario register(Usuario usuario) {
-        if (usuarioRepository.findByEmail(usuario.getEmail()).isPresent()) {
-            throw new RuntimeException("El correo ya está registrado");
-        }
         usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
         return usuarioRepository.save(usuario);
+    }
+
+    // ✅ Método temporal para debug de password
+    public boolean checkPassword(String email, String rawPassword) {
+        return usuarioRepository.findByEmail(email)
+                .map(usuario -> passwordEncoder.matches(rawPassword, usuario.getPassword()))
+                .orElse(false);
     }
 }
