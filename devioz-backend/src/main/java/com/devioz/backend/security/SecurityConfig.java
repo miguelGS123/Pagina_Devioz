@@ -50,9 +50,10 @@ public class SecurityConfig {
             }))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/**").permitAll()      // Login y registro sin token
-                .requestMatchers("/productos/**").permitAll() // Público por ahora
-                .anyRequest().authenticated()                 // Todo lo demás requiere token
+                .requestMatchers("/auth/**").permitAll()         // Login y registro sin token
+                .requestMatchers("/productos/**").permitAll()    // Público por ahora
+                .requestMatchers("/api/formulario/**").permitAll() // 👈 Permitir formulario público
+                .anyRequest().authenticated()                    // Todo lo demás requiere token
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

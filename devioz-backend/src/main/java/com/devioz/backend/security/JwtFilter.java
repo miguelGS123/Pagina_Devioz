@@ -23,42 +23,44 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     @Override
-protected void doFilterInternal(HttpServletRequest request,
-                                HttpServletResponse response,
-                                FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
 
-    String path = request.getServletPath();
+        String path = request.getServletPath();
 
-    // 🔹 Permitir endpoints públicos sin token
-    if (path.startsWith("/auth") || path.startsWith("/productos")) {
-        filterChain.doFilter(request, response);
-        return;
-    }
+        // 🔹 Permitir endpoints públicos sin token
+        if (path.startsWith("/auth") 
+                || path.startsWith("/productos") 
+                || path.startsWith("/api/formulario")) {  // 👈 agregado para formulario público
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-    // 🔹 Obtener el token del header Authorization
-    String authHeader = request.getHeader("Authorization");
-    if (authHeader != null && authHeader.startsWith("Bearer ")) {
-        String token = authHeader.substring(7);
-        try {
-            if (jwtUtil.validateToken(token)) {
-                String email = jwtUtil.extractEmail(token);
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-            } else {
+        // 🔹 Obtener el token del header Authorization
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            try {
+                if (jwtUtil.validateToken(token)) {
+                    String email = jwtUtil.extractEmail(token);
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                } else {
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Token inválido");
+                    return;
+                }
+            } catch (JwtException e) {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Token inválido");
                 return;
             }
-        } catch (JwtException e) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Token inválido");
+        } else {
+            // 🔹 No bloquear si no hay token (para rutas que no lo requieren)
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "No se proporcionó token");
             return;
         }
-    } else {
-        // 🔹 No bloquear si no hay token, solo pasar la petición
-        filterChain.doFilter(request, response);
-        return;
-    }
 
-    filterChain.doFilter(request, response);
-}
+        filterChain.doFilter(request, response);
+    }
 }
