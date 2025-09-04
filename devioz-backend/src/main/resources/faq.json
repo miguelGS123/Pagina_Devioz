@@ -1,0 +1,10 @@
+[
+  { "question": "hola", "answer": "¡Hola! Soy el asistente de Devioz. ¿En qué puedo ayudarte?" },
+  { "question": "servicios", "answer": "Ofrecemos consultoría de informática, desarrollo web y gestión de instalaciones TI." },
+  { "question": "horarios", "answer": "Atendemos de Lunes a Sábado de 9:00 am a 1:00 pm." },
+  { "question": "contacto", "answer": "Puedes escribirnos a corporativo@devioz.com o llamar al 969072449." },
+  { "question": "ubicación", "answer": "Estamos en Nro. 0 dpto. 302 urb. Manzanilla (block g08) – Lima." },
+  { "question": "¿Cómo hago un pedido?", "answer": "Para hacer un pedido, agrega los productos al carrito y confirma tu compra." },
+  { "question": "¿Cuáles son los métodos de pago?", "answer": "Aceptamos tarjeta de crédito, débito y pagos por Yape/Plin." },
+  { "question": "¿Hacen envíos?", "answer": "Sí, realizamos envíos a todo el país." }
+]
