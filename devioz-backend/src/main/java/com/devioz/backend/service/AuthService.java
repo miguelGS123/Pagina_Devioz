@@ -3,46 +3,48 @@ package com.devioz.backend.service;
 import com.devioz.backend.model.Usuario;
 import com.devioz.backend.repository.UsuarioRepository;
 import com.devioz.backend.security.JwtUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class AuthService {
 
-    private final UsuarioRepository usuarioRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
-    public AuthService(UsuarioRepository usuarioRepository,
-                       PasswordEncoder passwordEncoder,
-                       JwtUtil jwtUtil) {
-        this.usuarioRepository = usuarioRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtil = jwtUtil;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    // ✅ Registro de usuario
+    public String register(Usuario usuario) {
+        Optional<Usuario> existente = usuarioRepository.findByEmail(usuario.getEmail());
+        if (existente.isPresent()) {
+            throw new RuntimeException("El correo ya está registrado");
+        }
+
+        usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
+        Usuario nuevoUsuario = usuarioRepository.save(usuario);
+
+        // ✅ Usamos email y rol para el token
+        return jwtUtil.generateToken(nuevoUsuario.getEmail(), nuevoUsuario.getRol().name());
     }
 
-    // Login: verifica password y devuelve token
-    public String login(String email, String rawPassword) {
+    // ✅ Login de usuario
+    public String login(String email, String password) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        if (!passwordEncoder.matches(rawPassword, usuario.getPassword())) {
+        if (!passwordEncoder.matches(password, usuario.getPassword())) {
             throw new RuntimeException("Credenciales inválidas");
         }
 
+        // ✅ Usamos email y rol para el token
         return jwtUtil.generateToken(usuario.getEmail(), usuario.getRol().name());
-    }
-
-    // Registro: encripta password y guarda usuario
-    public Usuario register(Usuario usuario) {
-        usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
-        return usuarioRepository.save(usuario);
-    }
-
-    // ✅ Método temporal para debug de password
-    public boolean checkPassword(String email, String rawPassword) {
-        return usuarioRepository.findByEmail(email)
-                .map(usuario -> passwordEncoder.matches(rawPassword, usuario.getPassword()))
-                .orElse(false);
     }
 }

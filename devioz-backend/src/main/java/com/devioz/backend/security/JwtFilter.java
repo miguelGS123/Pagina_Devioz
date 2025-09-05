@@ -30,15 +30,15 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
         String method = request.getMethod();
-        
+
         System.out.println("\n=== FILTRO JWT ===");
         System.out.println("Método: " + method);
         System.out.println("Ruta: " + path);
         System.out.println("Authorization: " + request.getHeader("Authorization"));
         System.out.println("Content-Type: " + request.getHeader("Content-Type"));
         System.out.println("Origin: " + request.getHeader("Origin"));
-        
-        // Log todos los headers para diagnóstico
+
+        // Log headers
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
@@ -46,7 +46,7 @@ public class JwtFilter extends OncePerRequestFilter {
         }
         System.out.println("==================");
 
-        // ✅ Permitir rutas públicas sin token
+        // ✅ Rutas públicas sin token
         if (path.startsWith("/auth") ||
             path.startsWith("/productos") ||
             path.startsWith("/api/formulario") ||
@@ -56,14 +56,14 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
 
-        // ✅ Permitir solicitudes OPTIONS (preflight de CORS)
+        // ✅ Permitir preflight CORS
         if ("OPTIONS".equalsIgnoreCase(method)) {
             System.out.println("✅ Solicitud OPTIONS (preflight), permitiendo sin validación");
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 🔒 Para el resto de rutas protegidas, validamos token
+        // 🔒 Validación de token en rutas protegidas
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
@@ -85,7 +85,6 @@ public class JwtFilter extends OncePerRequestFilter {
                 return;
             }
         } else {
-            // 🚫 No hay token en una ruta protegida
             System.out.println("🚫 No se proporcionó token en la cabecera Authorization");
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "No se proporcionó token");
             return;

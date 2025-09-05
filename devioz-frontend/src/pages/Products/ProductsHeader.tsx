@@ -31,9 +31,17 @@ const ProductsHeader: React.FC<Props> = ({
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    try {
+      const storedUser = localStorage.getItem("user");
+
+      if (storedUser && storedUser !== "undefined" && storedUser !== "null") {
+        setUser(JSON.parse(storedUser));
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      console.error("Error al parsear usuario del localStorage:", error);
+      setUser(null);
     }
   }, []);
 
@@ -56,6 +64,7 @@ const ProductsHeader: React.FC<Props> = ({
         </motion.h1>
 
         <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
+          {/* Input de búsqueda */}
           <input
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -63,6 +72,7 @@ const ProductsHeader: React.FC<Props> = ({
             className="w-full md:w-64 rounded-xl border px-4 py-2 outline-none focus:ring-2 focus:ring-teal-600"
           />
 
+          {/* Categoría */}
           <select
             value={category}
             onChange={(e) => onCategoryChange(e.target.value)}
@@ -77,6 +87,7 @@ const ProductsHeader: React.FC<Props> = ({
             <option>Otros</option>
           </select>
 
+          {/* Orden */}
           <select
             value={sort}
             onChange={(e) => onSortChange(e.target.value)}
@@ -88,7 +99,7 @@ const ProductsHeader: React.FC<Props> = ({
             <option value="rating">Mejor valorados</option>
           </select>
 
-          {/* Si no hay sesión -> botón Login */}
+          {/* Login / Usuario */}
           {!user ? (
             <button
               onClick={() => setLoginOpen(true)}
@@ -98,11 +109,10 @@ const ProductsHeader: React.FC<Props> = ({
               Login
             </button>
           ) : (
-            // Si hay sesión -> menú de usuario
             <div className="relative group">
               <button className="inline-flex items-center gap-2 bg-gray-200 text-gray-900 px-4 py-2 rounded-xl shadow">
                 <User size={18} />
-                {user.name || "Usuario"}
+                {user?.name || "Usuario"}
               </button>
               <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow-md hidden group-hover:block z-50">
                 <button
@@ -121,7 +131,7 @@ const ProductsHeader: React.FC<Props> = ({
             </div>
           )}
 
-          {/* Botón Carrito */}
+          {/* Carrito */}
           <button
             onClick={onCartClick}
             className="relative inline-flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-xl shadow-md hover:shadow-lg transition"

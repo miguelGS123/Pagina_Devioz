@@ -57,7 +57,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/**").permitAll()
+                .requestMatchers("/auth/**").permitAll()          // login y register abiertos
                 .requestMatchers("/productos/**").permitAll()
                 .requestMatchers("/api/formulario/**").permitAll()
                 .requestMatchers("/api/chat/**").permitAll()

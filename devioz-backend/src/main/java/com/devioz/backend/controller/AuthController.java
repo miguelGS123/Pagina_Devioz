@@ -1,53 +1,52 @@
 package com.devioz.backend.controller;
 
 import com.devioz.backend.model.Usuario;
+import com.devioz.backend.repository.UsuarioRepository;
 import com.devioz.backend.service.AuthService;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/auth")
-@CrossOrigin(origins = "*", allowedHeaders = "*")
+@CrossOrigin(origins = "http://localhost:5173") // 👈 ajusta al puerto de tu frontend
 public class AuthController {
 
-    private final AuthService authService;
+    @Autowired
+    private AuthService authService;
 
-    public AuthController(AuthService authService) {
-        this.authService = authService;
-    }
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
-    // Login
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        try {
-            String token = authService.login(request.email(), request.password());
-            return ResponseEntity.ok(new TokenResponse(token));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
-        }
-    }
-
-    // Registro
+    // ✅ Registro
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Usuario usuario) {
-        try {
-            Usuario savedUser = authService.register(usuario);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body("Error en el registro: " + e.getMessage());
-        }
+        String token = authService.register(usuario);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("token", token);
+        response.put("usuario", usuario);
+
+        return ResponseEntity.ok(response);
     }
 
-    // ✅ Endpoint temporal para debug de password
-    @PostMapping("/check-password")
-    public ResponseEntity<?> checkPassword(@RequestBody CheckPasswordRequest request) {
-        boolean matches = authService.checkPassword(request.email(), request.password());
-        return ResponseEntity.ok("¿Coincide el password? " + matches);
-    }
+    // ✅ Login
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody Map<String, String> loginData) {
+        String email = loginData.get("email");
+        String password = loginData.get("password");
 
-    // DTOs
-    public record LoginRequest(String email, String password) {}
-    public record TokenResponse(String token) {}
-    public record CheckPasswordRequest(String email, String password) {}
+        String token = authService.login(email, password);
+
+        Usuario usuario = usuarioRepository.findByEmail(email).orElse(null);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("token", token);
+        response.put("usuario", usuario);
+
+        return ResponseEntity.ok(response);
+    }
 }
