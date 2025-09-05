@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ShoppingCart, User } from "lucide-react";
 import LoginModal from "./LoginModal";
@@ -18,12 +18,31 @@ interface Props {
 }
 
 const ProductsHeader: React.FC<Props> = ({
-  itemsCount, onCartClick,
-  search, onSearchChange,
-  category, onCategoryChange,
-  sort, onSortChange
+  itemsCount,
+  onCartClick,
+  search,
+  onSearchChange,
+  category,
+  onCategoryChange,
+  sort,
+  onSortChange,
 }) => {
   const [loginOpen, setLoginOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setUser(null);
+    window.location.reload();
+  };
 
   return (
     <div className="bg-white border-b text-gray-900">
@@ -69,14 +88,38 @@ const ProductsHeader: React.FC<Props> = ({
             <option value="rating">Mejor valorados</option>
           </select>
 
-          {/* Botón Login */}
-          <button
-            onClick={() => setLoginOpen(true)}
-            className="inline-flex items-center gap-2 bg-gray-200 text-gray-900 px-4 py-2 rounded-xl shadow hover:bg-gray-300 transition"
-          >
-            <User size={18} />
-            Login
-          </button>
+          {/* Si no hay sesión -> botón Login */}
+          {!user ? (
+            <button
+              onClick={() => setLoginOpen(true)}
+              className="inline-flex items-center gap-2 bg-gray-200 text-gray-900 px-4 py-2 rounded-xl shadow hover:bg-gray-300 transition"
+            >
+              <User size={18} />
+              Login
+            </button>
+          ) : (
+            // Si hay sesión -> menú de usuario
+            <div className="relative group">
+              <button className="inline-flex items-center gap-2 bg-gray-200 text-gray-900 px-4 py-2 rounded-xl shadow">
+                <User size={18} />
+                {user.name || "Usuario"}
+              </button>
+              <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow-md hidden group-hover:block z-50">
+                <button
+                  onClick={() => alert("Actualizar datos próximamente")}
+                  className="block w-full px-4 py-2 text-left hover:bg-gray-100"
+                >
+                  Actualizar datos
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="block w-full px-4 py-2 text-left text-red-600 hover:bg-gray-100"
+                >
+                  Cerrar sesión
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Botón Carrito */}
           <button
