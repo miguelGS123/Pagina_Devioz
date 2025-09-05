@@ -76,20 +76,15 @@ public class JwtFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 } else {
                     System.out.println("❌ Token inválido");
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Token inválido");
-                    return;
                 }
             } catch (JwtException e) {
                 System.out.println("❌ Error validando token: " + e.getMessage());
-                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Token inválido");
-                return;
             }
         } else {
             System.out.println("🚫 No se proporcionó token en la cabecera Authorization");
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "No se proporcionó token");
-            return;
         }
 
+        // 🚀 Siempre continuar, dejar que Spring Security maneje la autorización
         filterChain.doFilter(request, response);
     }
 }

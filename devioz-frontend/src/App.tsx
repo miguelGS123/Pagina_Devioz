@@ -14,13 +14,16 @@ import ChatButton from "./components/ChatButton";
 
 // Páginas de productos
 import ProductsPage from "./pages/Products/ProductsPage";
-import ProductDetailPage from "./pages/Products/ProductDetailPage"; // 🔹 nueva
+import ProductDetailPage from "./pages/Products/ProductDetailPage";
 
-// Componente para la Landing (tu contenido actual)
+// Nuevas páginas
+import ProfilePage from "./pages/User/Profilepage";
+import AdminPage from "./pages/Admin/AdminPage";
+
 const Landing: React.FC = () => {
   return (
     <>
-      <SocialSidebar />   
+      <SocialSidebar />
       <ScrollToTop />
       <Navbar />
       <Hero />
@@ -40,14 +43,18 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Ruta principal de la landing */}
+        {/* Landing principal */}
         <Route path="/" element={<Landing />} />
-        
-        {/* Ruta de productos con login, ventas, etc */}
+
+        {/* Productos */}
         <Route path="/productos" element={<ProductsPage />} />
-        
-        {/* Ruta de detalle de producto */}
         <Route path="/producto/:id" element={<ProductDetailPage />} />
+
+        {/* Usuario */}
+        <Route path="/perfil" element={<ProfilePage />} />
+
+        {/* Admin */}
+        <Route path="/admin" element={<AdminPage />} />
       </Routes>
     </Router>
   );

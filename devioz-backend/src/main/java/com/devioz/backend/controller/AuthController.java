@@ -28,7 +28,12 @@ public class AuthController {
 
         Map<String, Object> response = new HashMap<>();
         response.put("token", token);
-        response.put("usuario", usuario);
+        response.put("usuario", Map.of(
+                "id", usuario.getId(),
+                "nombre", usuario.getNombre(),
+                "email", usuario.getEmail(),
+                "rol", usuario.getRol().name()
+        ));
 
         return ResponseEntity.ok(response);
     }
@@ -45,7 +50,15 @@ public class AuthController {
 
         Map<String, Object> response = new HashMap<>();
         response.put("token", token);
-        response.put("usuario", usuario);
+
+        if (usuario != null) {
+            response.put("usuario", Map.of(
+                    "id", usuario.getId(),
+                    "nombre", usuario.getNombre(),
+                    "email", usuario.getEmail(),
+                    "rol", usuario.getRol().name()
+            ));
+        }
 
         return ResponseEntity.ok(response);
     }

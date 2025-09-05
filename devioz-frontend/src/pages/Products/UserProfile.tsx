@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ShoppingCart, User } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import LoginModal from "./LoginModal";
 
 interface Props {
@@ -28,18 +27,16 @@ const ProductsHeader: React.FC<Props> = ({
   sort,
   onSortChange,
 }) => {
-  const navigate = useNavigate();
   const [loginOpen, setLoginOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    if (storedUser && storedUser !== "undefined" && storedUser !== "null") {
+    if (storedUser) {
       try {
         setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error("Error al parsear usuario:", error);
-        localStorage.removeItem("user");
+      } catch {
+        setUser(null);
       }
     }
   }, []);
@@ -63,6 +60,7 @@ const ProductsHeader: React.FC<Props> = ({
         </motion.h1>
 
         <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
+          {/* 🔍 Buscador */}
           <input
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -70,6 +68,7 @@ const ProductsHeader: React.FC<Props> = ({
             className="w-full md:w-64 rounded-xl border px-4 py-2 outline-none focus:ring-2 focus:ring-teal-600"
           />
 
+          {/* 📂 Categorías */}
           <select
             value={category}
             onChange={(e) => onCategoryChange(e.target.value)}
@@ -84,6 +83,7 @@ const ProductsHeader: React.FC<Props> = ({
             <option>Otros</option>
           </select>
 
+          {/* ↕️ Orden */}
           <select
             value={sort}
             onChange={(e) => onSortChange(e.target.value)}
@@ -95,7 +95,7 @@ const ProductsHeader: React.FC<Props> = ({
             <option value="rating">Mejor valorados</option>
           </select>
 
-          {/* Si no hay sesión -> botón Login */}
+          {/* 👤 Sesión */}
           {!user ? (
             <button
               onClick={() => setLoginOpen(true)}
@@ -105,39 +105,57 @@ const ProductsHeader: React.FC<Props> = ({
               Login
             </button>
           ) : (
-            // Si hay sesión -> menú según rol
             <div className="relative group">
               <button className="inline-flex items-center gap-2 bg-gray-200 text-gray-900 px-4 py-2 rounded-xl shadow">
                 <User size={18} />
                 {user.name || "Usuario"}
               </button>
-              <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow-md hidden group-hover:block z-50 min-w-[160px]">
+              <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow-md hidden group-hover:block z-50 w-48">
+                {/* Menú dinámico por rol */}
                 {user.role === "USER" && (
                   <>
                     <button
-                      onClick={() => navigate("/perfil")}
+                      onClick={() => alert("Actualizar datos próximamente")}
                       className="block w-full px-4 py-2 text-left hover:bg-gray-100"
                     >
-                      Mi Perfil
+                      Actualizar datos
                     </button>
                     <button
-                      onClick={() => alert("Detalles de compras próximamente 🚀")}
-                      className="block w-full px-4 py-2 text-left hover:bg-gray-100"
+                      onClick={() => alert("Eliminar cuenta próximamente")}
+                      className="block w-full px-4 py-2 text-left text-red-600 hover:bg-gray-100"
                     >
-                      Mis Compras
+                      Eliminar cuenta
                     </button>
                   </>
                 )}
 
                 {user.role === "ADMIN" && (
+                  <>
+                    <button
+                      onClick={() => alert("Gestión de productos")}
+                      className="block w-full px-4 py-2 text-left hover:bg-gray-100"
+                    >
+                      Administrar productos
+                    </button>
+                    <button
+                      onClick={() => alert("Gestión de usuarios")}
+                      className="block w-full px-4 py-2 text-left hover:bg-gray-100"
+                    >
+                      Administrar usuarios
+                    </button>
+                  </>
+                )}
+
+                {user.role === "VENDEDOR" && (
                   <button
-                    onClick={() => navigate("/admin")}
+                    onClick={() => alert("Mis productos")}
                     className="block w-full px-4 py-2 text-left hover:bg-gray-100"
                   >
-                    Panel Admin
+                    Mis productos
                   </button>
                 )}
 
+                {/* 🚪 Cerrar sesión */}
                 <button
                   onClick={handleLogout}
                   className="block w-full px-4 py-2 text-left text-red-600 hover:bg-gray-100"
@@ -148,7 +166,7 @@ const ProductsHeader: React.FC<Props> = ({
             </div>
           )}
 
-          {/* Botón Carrito */}
+          {/* 🛒 Carrito */}
           <button
             onClick={onCartClick}
             className="relative inline-flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-xl shadow-md hover:shadow-lg transition"

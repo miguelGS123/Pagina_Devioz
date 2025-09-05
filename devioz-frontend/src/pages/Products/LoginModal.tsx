@@ -29,9 +29,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
 
       const res = await fetch(url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
         credentials: "include",
       });
@@ -49,14 +47,17 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
 
       const data = JSON.parse(responseText);
 
-      if (data.token) {
+      if (data.token && data.user) {
         localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user)); // Guardamos info de usuario
-        alert(isRegister ? "✅ Registro exitoso" : "✅ Login exitoso");
+        localStorage.setItem("user", JSON.stringify(data.user));
+
+        // Notificar a la app que hay sesión
+        window.dispatchEvent(new Event("userLoggedIn"));
+
         onClose();
         window.location.reload();
       } else {
-        throw new Error("No se recibió token en la respuesta");
+        throw new Error("No se recibió información de usuario");
       }
     } catch (err: any) {
       console.error("Error completo:", err);
@@ -88,16 +89,16 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
                 placeholder="Nombres completos"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-teal-500"
                 required
+                className="w-full border rounded px-3 py-2"
               />
               <input
                 type="tel"
-                placeholder="Número de teléfono"
+                placeholder="Teléfono"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-teal-500"
                 required
+                className="w-full border rounded px-3 py-2"
               />
             </>
           )}
@@ -107,8 +108,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
             placeholder="Correo electrónico"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-teal-500"
             required
+            className="w-full border rounded px-3 py-2"
           />
 
           <input
@@ -116,8 +117,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
             placeholder="Contraseña"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-teal-500"
             required
+            className="w-full border rounded px-3 py-2"
           />
 
           {error && (
@@ -129,7 +130,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
           <button
             type="submit"
             disabled={loading}
-            className="bg-teal-500 text-white py-2 rounded hover:bg-teal-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-teal-500 text-white py-2 rounded hover:bg-teal-600 transition-colors disabled:opacity-50"
           >
             {loading ? "Procesando..." : isRegister ? "Registrarse" : "Iniciar Sesión"}
           </button>
