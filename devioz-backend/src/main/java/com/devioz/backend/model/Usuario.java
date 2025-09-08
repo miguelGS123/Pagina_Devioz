@@ -11,7 +11,12 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // 👇 Indicamos que en la DB la columna se llama "name"
+    @Column(name = "name", nullable = false)
     private String nombre;
+
+    @Column(name = "telefono")
+    private String telefono;
 
     @Column(unique = true, nullable = false)
     private String email;
@@ -22,6 +27,7 @@ public class Usuario {
     @Enumerated(EnumType.STRING)
     private Rol rol = Rol.USUARIO;
 
+    @Column(name = "creado_en")
     private LocalDateTime creadoEn = LocalDateTime.now();
 
     // ✅ GETTERS Y SETTERS
@@ -30,6 +36,9 @@ public class Usuario {
 
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
+
+    public String getTelefono() { return telefono; }
+    public void setTelefono(String telefono) { this.telefono = telefono; }
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }

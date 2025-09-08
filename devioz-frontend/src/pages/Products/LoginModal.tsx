@@ -24,7 +24,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
         : "http://localhost:8008/auth/login";
 
       const body = isRegister
-        ? { email, password, name, phone }
+        ? { email, password, nombre: name, telefono: phone } // 👈 ajustado al backend
         : { email, password };
 
       const res = await fetch(url, {
