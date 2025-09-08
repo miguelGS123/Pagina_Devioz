@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ShoppingCart, User } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import LoginModal from "./LoginModal";
 
 interface Props {
@@ -29,11 +30,12 @@ const ProductsHeader: React.FC<Props> = ({
 }) => {
   const [loginOpen, setLoginOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
 
-  useEffect(() => {
+  // Cargar usuario desde localStorage
+  const loadUser = () => {
     try {
       const storedUser = localStorage.getItem("user");
-
       if (storedUser && storedUser !== "undefined" && storedUser !== "null") {
         setUser(JSON.parse(storedUser));
       } else {
@@ -43,13 +45,27 @@ const ProductsHeader: React.FC<Props> = ({
       console.error("Error al parsear usuario del localStorage:", error);
       setUser(null);
     }
+  };
+
+  useEffect(() => {
+    loadUser();
+
+    // Escuchar cambios en localStorage (ej: login/logout desde LoginModal)
+    const handleStorageChange = () => loadUser();
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
-    window.location.reload();
+    navigate("/productos");
+    // Notificar cambios
+    window.dispatchEvent(new Event("storage"));
   };
 
   return (
@@ -112,14 +128,14 @@ const ProductsHeader: React.FC<Props> = ({
             <div className="relative group">
               <button className="inline-flex items-center gap-2 bg-gray-200 text-gray-900 px-4 py-2 rounded-xl shadow">
                 <User size={18} />
-                {user?.name || "Usuario"}
+                {user?.nombre || user?.name || "Usuario"}
               </button>
               <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow-md hidden group-hover:block z-50">
                 <button
-                  onClick={() => alert("Actualizar datos próximamente")}
+                  onClick={() => navigate("/usuario")} // 🔹 Corregido: va al perfil de usuario
                   className="block w-full px-4 py-2 text-left hover:bg-gray-100"
                 >
-                  Actualizar datos
+                  Ir a mi perfil
                 </button>
                 <button
                   onClick={handleLogout}

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface LoginModalProps {
   onClose: () => void;
@@ -13,6 +14,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const navigate = useNavigate();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -24,14 +27,12 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
         : "http://localhost:8008/auth/login";
 
       const body = isRegister
-        ? { email, password, nombre: name, telefono: phone } // 👈 ajustado al backend
+        ? { email, password, nombre: name, telefono: phone }
         : { email, password };
 
       const res = await fetch(url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
         credentials: "include",
       });
@@ -43,7 +44,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
           const errorData = JSON.parse(responseText);
           throw new Error(errorData.message || `Error ${res.status}`);
         } catch {
-          throw new Error(responseText || `Error ${res.status}: ${res.statusText}`);
+          throw new Error(
+            responseText || `Error ${res.status}: ${res.statusText}`
+          );
         }
       }
 
@@ -51,10 +54,17 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
 
       if (data.token) {
         localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user)); // Guardamos info de usuario
+        localStorage.setItem("user", JSON.stringify(data.user));
+
+        // 🔹 Disparar evento para refrescar otros componentes
+        window.dispatchEvent(new Event("storage"));
+
         alert(isRegister ? "✅ Registro exitoso" : "✅ Login exitoso");
+
         onClose();
-        window.location.reload();
+
+        // 🔹 Redirigir siempre al perfil de usuario
+        navigate("/productos");
       } else {
         throw new Error("No se recibió token en la respuesta");
       }
@@ -131,7 +141,11 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
             disabled={loading}
             className="bg-teal-500 text-white py-2 rounded hover:bg-teal-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "Procesando..." : isRegister ? "Registrarse" : "Iniciar Sesión"}
+            {loading
+              ? "Procesando..."
+              : isRegister
+              ? "Registrarse"
+              : "Iniciar Sesión"}
           </button>
         </form>
 

@@ -12,15 +12,19 @@ import SocialSidebar from "./components/SocialSidebar";
 import ScrollToTop from "./components/ScrollToTop";
 import ChatButton from "./components/ChatButton";
 
-// Páginas de productos
+// Páginas
 import ProductsPage from "./pages/Products/ProductsPage";
-import ProductDetailPage from "./pages/Products/ProductDetailPage"; // 🔹 nueva
+import ProductDetailPage from "./pages/Products/ProductDetailPage";
+import UserDashboard from "./pages/UserDashboard"; // nuevo
 
-// Componente para la Landing (tu contenido actual)
+// Rutas protegidas
+import ProtectedRoute from "./routes/ProtectedRoute";
+
+// Componente para la Landing
 const Landing: React.FC = () => {
   return (
     <>
-      <SocialSidebar />   
+      <SocialSidebar />
       <ScrollToTop />
       <Navbar />
       <Hero />
@@ -40,14 +44,22 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Ruta principal de la landing */}
+        {/* Landing */}
         <Route path="/" element={<Landing />} />
-        
-        {/* Ruta de productos con login, ventas, etc */}
+
+        {/* Productos */}
         <Route path="/productos" element={<ProductsPage />} />
-        
-        {/* Ruta de detalle de producto */}
         <Route path="/producto/:id" element={<ProductDetailPage />} />
+
+        {/* 🔹 Ruta protegida del usuario */}
+        <Route
+          path="/usuario"
+          element={
+            <ProtectedRoute role="USUARIO">
+              <UserDashboard />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Router>
   );

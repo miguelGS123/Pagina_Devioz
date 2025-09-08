@@ -61,6 +61,12 @@ public class SecurityConfig {
                 .requestMatchers("/productos/**").permitAll()
                 .requestMatchers("/api/formulario/**").permitAll()
                 .requestMatchers("/api/chat/**").permitAll()
+
+                .requestMatchers("/user/**").hasRole("USUARIO")     // Rutas segun el rol
+                .requestMatchers("/admin/**").hasRole("ADMIN")
+                .requestMatchers("/seller/**").hasRole("VENDEDOR")
+
+
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
