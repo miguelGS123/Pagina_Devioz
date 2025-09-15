@@ -57,15 +57,15 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/**").permitAll()          // login y register abiertos
+                .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/productos/**").permitAll()
                 .requestMatchers("/api/formulario/**").permitAll()
                 .requestMatchers("/api/chat/**").permitAll()
+                .requestMatchers("/api/hello").permitAll()   // 👈 añadimos hello aquí también
 
-                .requestMatchers("/user/**").hasRole("USUARIO")     // Rutas segun el rol
+                .requestMatchers("/user/**").hasRole("USUARIO")
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/seller/**").hasRole("VENDEDOR")
-
 
                 .anyRequest().authenticated()
             )

@@ -10,8 +10,8 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    private final SecretKey SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS512); // Genera clave segura
-    private final long EXPIRATION_TIME = 86400000; // 1 día
+    private final SecretKey SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS512); // 🔒 Clave segura
+    private final long EXPIRATION_TIME = 86400000; // ⏳ 1 día
 
     // ✅ Generar token con email y rol
     public String generateToken(String email, String role) {
@@ -34,7 +34,17 @@ public class JwtUtil {
                 .getSubject();
     }
 
-    // ✅ Validar token (versión simple, usada por JwtFilter)
+    // ✅ Extraer rol del token
+    public String extractRole(String token) {
+        return (String) Jwts.parserBuilder()
+                .setSigningKey(SECRET_KEY)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("role");
+    }
+
+    // ✅ Validar token (versión simple)
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
@@ -47,11 +57,21 @@ public class JwtUtil {
         }
     }
 
-    // ✅ Validar token con usuario (versión extendida, opcional)
+    // ✅ Validar token con email
     public boolean validateToken(String token, String email) {
         try {
             String tokenEmail = extractEmail(token);
             return tokenEmail.equals(email) && !isTokenExpired(token);
+        } catch (JwtException e) {
+            return false;
+        }
+    }
+
+    // ✅ Verificar rol del token (ejemplo: ADMIN)
+    public boolean hasRole(String token, String requiredRole) {
+        try {
+            String role = extractRole(token);
+            return role != null && role.equalsIgnoreCase(requiredRole);
         } catch (JwtException e) {
             return false;
         }

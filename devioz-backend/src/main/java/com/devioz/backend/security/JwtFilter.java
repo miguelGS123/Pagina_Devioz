@@ -50,7 +50,8 @@ public class JwtFilter extends OncePerRequestFilter {
         if (path.startsWith("/auth") ||
             path.startsWith("/productos") ||
             path.startsWith("/api/formulario") ||
-            path.startsWith("/api/chat")) {
+            path.startsWith("/api/chat") ||
+            path.startsWith("/api/hello")) {   // 👈 añadimos hello como público
             System.out.println("✅ Ruta pública, permitiendo acceso sin token: " + path);
             filterChain.doFilter(request, response);
             return;
