@@ -1,5 +1,6 @@
 package com.devioz.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -21,6 +22,7 @@ public class Usuario {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @JsonIgnore // 🔒 NO se devolverá en respuestas JSON
     @Column(nullable = false)
     private String password;
 

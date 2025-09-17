@@ -61,7 +61,7 @@ public class SecurityConfig {
                 .requestMatchers("/productos/**").permitAll()
                 .requestMatchers("/api/formulario/**").permitAll()
                 .requestMatchers("/api/chat/**").permitAll()
-                .requestMatchers("/api/hello").permitAll()   // 👈 añadimos hello aquí también
+                .requestMatchers("/api/hello").permitAll()   
 
                 .requestMatchers("/user/**").hasRole("USUARIO")
                 .requestMatchers("/admin/**").hasRole("ADMIN")
