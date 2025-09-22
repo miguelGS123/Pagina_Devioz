@@ -1,8 +1,11 @@
 package com.devioz.backend.controller;
 
 import com.devioz.backend.model.Producto;
+import com.devioz.backend.model.Usuario;
+import com.devioz.backend.repository.UsuarioRepository;
 import com.devioz.backend.service.ProductoService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,9 +16,11 @@ import java.util.Optional;
 public class ProductoController {
 
     private final ProductoService productoService;
+    private final UsuarioRepository usuarioRepository;
 
-    public ProductoController(ProductoService productoService) {
+    public ProductoController(ProductoService productoService, UsuarioRepository usuarioRepository) {
         this.productoService = productoService;
+        this.usuarioRepository = usuarioRepository;
     }
 
     // ✅ Listar todos los productos
@@ -32,9 +37,21 @@ public class ProductoController {
                        .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // ✅ Crear nuevo producto
+    // ✅ Crear nuevo producto (ACTUALIZADO - asigna usuario automáticamente)
     @PostMapping
-    public ResponseEntity<Producto> createProducto(@RequestBody Producto producto) {
+    public ResponseEntity<Producto> createProducto(@RequestBody Producto producto, 
+                                                  Authentication authentication) {
+        
+        // Obtener el email del usuario autenticado
+        String email = authentication.getName();
+        
+        // Buscar el usuario en la base de datos
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + email));
+        
+        // Asignar el usuario autenticado como creador
+        producto.setCreadoPor(usuario);
+        
         Producto savedProducto = productoService.saveProducto(producto);
         return ResponseEntity.ok(savedProducto);
     }
@@ -50,7 +67,7 @@ public class ProductoController {
             existingProducto.setDescripcion(productoDetails.getDescripcion());
             existingProducto.setImagen(productoDetails.getImagen());
             existingProducto.setPrecio(productoDetails.getPrecio());
-            existingProducto.setCreadoPor(productoDetails.getCreadoPor());
+            // No actualizar creadoPor - se mantiene el original
 
             Producto updatedProducto = productoService.saveProducto(existingProducto);
             return ResponseEntity.ok(updatedProducto);

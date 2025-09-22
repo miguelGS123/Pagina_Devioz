@@ -7,20 +7,22 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Enumeration;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final MyUserDetailsService userDetailsService; // ← Esto debe estar
 
-    public JwtFilter(JwtUtil jwtUtil) {
+    public JwtFilter(JwtUtil jwtUtil, MyUserDetailsService userDetailsService) {
         this.jwtUtil = jwtUtil;
+        this.userDetailsService = userDetailsService; // ← Y esto en el constructor
     }
 
     @Override
@@ -35,23 +37,13 @@ public class JwtFilter extends OncePerRequestFilter {
         System.out.println("Método: " + method);
         System.out.println("Ruta: " + path);
         System.out.println("Authorization: " + request.getHeader("Authorization"));
-        System.out.println("Content-Type: " + request.getHeader("Content-Type"));
-        System.out.println("Origin: " + request.getHeader("Origin"));
-
-        // Log headers
-        Enumeration<String> headerNames = request.getHeaderNames();
-        while (headerNames.hasMoreElements()) {
-            String headerName = headerNames.nextElement();
-            System.out.println(headerName + ": " + request.getHeader(headerName));
-        }
-        System.out.println("==================");
 
         // ✅ Rutas públicas sin token
         if (path.startsWith("/auth") ||
-            path.startsWith("/productos") ||
+            (path.startsWith("/api/productos") && "GET".equalsIgnoreCase(method)) ||
             path.startsWith("/api/formulario") ||
             path.startsWith("/api/chat") ||
-            path.startsWith("/api/hello")) {   // 👈 añadimos hello como público
+            path.startsWith("/api/hello")) {
             System.out.println("✅ Ruta pública, permitiendo acceso sin token: " + path);
             filterChain.doFilter(request, response);
             return;
@@ -72,9 +64,25 @@ public class JwtFilter extends OncePerRequestFilter {
                 if (jwtUtil.validateToken(token)) {
                     String email = jwtUtil.extractEmail(token);
                     System.out.println("🔐 Token válido para: " + email);
+                    
+                    // ✅ CARGAR AUTORIDADES DEL USUARIO
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+                    
                     UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
+                            new UsernamePasswordAuthenticationToken(
+                                userDetails, 
+                                null, 
+                                userDetails.getAuthorities() // ← AUTORIDADES CARGADAS
+                            );
+                    
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                    System.out.println("✅ Autoridades cargadas: " + userDetails.getAuthorities());
+                    
+                    System.out.println("🔐 Ruta solicitada: " + path);
+                    System.out.println("🔐 Método: " + method);
+                    System.out.println("🔐 Autoridades del usuario: " + userDetails.getAuthorities());
+
+
                 } else {
                     System.out.println("❌ Token inválido");
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, "Token inválido");
@@ -83,6 +91,10 @@ public class JwtFilter extends OncePerRequestFilter {
             } catch (JwtException e) {
                 System.out.println("❌ Error validando token: " + e.getMessage());
                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Token inválido");
+                return;
+            } catch (Exception e) {
+                System.out.println("❌ Error cargando usuario: " + e.getMessage());
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Error cargando usuario");
                 return;
             }
         } else {

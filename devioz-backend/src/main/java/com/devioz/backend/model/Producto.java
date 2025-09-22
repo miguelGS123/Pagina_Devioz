@@ -1,9 +1,9 @@
 package com.devioz.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
-import lombok.Data;
-@Data
+
 @Entity
 @Table(name = "productos_devioz")
 public class Producto {
@@ -23,8 +23,9 @@ public class Producto {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal precio;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creado_por")
+    @JsonIgnore // ← EVITA que se envíe/reciba en JSON
     private Usuario creadoPor;
 
     // ======================

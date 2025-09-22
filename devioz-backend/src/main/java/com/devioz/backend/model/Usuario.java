@@ -27,7 +27,7 @@ public class Usuario {
     private String password;
 
     @Enumerated(EnumType.STRING)
-    private Rol rol = Rol.USUARIO;
+    private Rol rol = Rol.ROL_USUARIO;
 
     @Column(name = "creado_en")
     private LocalDateTime creadoEn = LocalDateTime.now();
@@ -54,8 +54,8 @@ public class Usuario {
     public LocalDateTime getCreadoEn() { return creadoEn; }
     public void setCreadoEn(LocalDateTime creadoEn) { this.creadoEn = creadoEn; }
 
-    // Enum para rol
-    public enum Rol {
-        ADMIN, VENDEDOR, USUARIO
-    }
+public enum Rol {
+    ROL_ADMIN, ROL_VENDEDOR, ROL_USUARIO
+}
+
 }
