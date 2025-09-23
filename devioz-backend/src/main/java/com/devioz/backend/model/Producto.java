@@ -25,8 +25,12 @@ public class Producto {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creado_por")
-    @JsonIgnore // ← EVITA que se envíe/reciba en JSON
+    @JsonIgnore
     private Usuario creadoPor;
+
+    // ✅ NUEVO CAMPO AGREGADO
+    @Column(nullable = false)
+    private Integer stock = 0;
 
     // ======================
     // Getters y Setters
@@ -78,5 +82,14 @@ public class Producto {
 
     public void setCreadoPor(Usuario creadoPor) {
         this.creadoPor = creadoPor;
+    }
+
+    // ✅ NUEVO GETTER Y SETTER PARA STOCK
+    public Integer getStock() {
+        return stock;
+    }
+
+    public void setStock(Integer stock) {
+        this.stock = stock;
     }
 }

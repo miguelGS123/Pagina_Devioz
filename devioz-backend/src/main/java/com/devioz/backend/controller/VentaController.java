@@ -70,7 +70,7 @@ public class VentaController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // 📌 Crear una venta (compra) usando el usuario del token
+    // 📌 Crear una venta (compra) usando el usuario del token - ✅ ACTUALIZADO CON STOCK
     @PostMapping
     public ResponseEntity<?> crearVenta(@RequestParam Long productoId,
                                         @RequestParam Integer cantidad,
@@ -81,7 +81,7 @@ public class VentaController {
             return ResponseEntity.badRequest().body("La cantidad debe ser mayor a 0");
         }
 
-        // 2. Buscar usuario autenticado
+        // 2. Buscar usuario autenticado y producto
         String email = authentication.getName();
         Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
         Optional<Producto> productoOpt = productoRepository.findById(productoId);
@@ -93,8 +93,18 @@ public class VentaController {
         Usuario usuario = usuarioOpt.get();
         Producto producto = productoOpt.get();
 
+        // ✅✅✅ NUEVA VALIDACIÓN: Verificar stock disponible
+        if (producto.getStock() < cantidad) {
+            return ResponseEntity.badRequest()
+                    .body("Stock insuficiente. Stock disponible: " + producto.getStock() + ", solicitado: " + cantidad);
+        }
+
         // 3. Calcular total
         BigDecimal total = producto.getPrecio().multiply(BigDecimal.valueOf(cantidad));
+
+        // ✅✅✅ ACTUALIZAR STOCK (Disminuir) - PARTE CRÍTICA
+        producto.setStock(producto.getStock() - cantidad);
+        productoRepository.save(producto); // Guardar el nuevo stock
 
         // 4. Crear venta
         Venta venta = new Venta();
@@ -102,7 +112,7 @@ public class VentaController {
         venta.setProducto(producto);
         venta.setCantidad(cantidad);
         venta.setTotal(total);
-        venta.setFecha(LocalDateTime.now()); // ⏰ Se agrega la fecha de la venta
+        venta.setFecha(LocalDateTime.now());
 
         Venta savedVenta = ventaService.saveVenta(venta);
 
