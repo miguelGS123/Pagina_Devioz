@@ -6,6 +6,7 @@ import com.devioz.backend.model.Usuario;
 import com.devioz.backend.model.Venta;
 import com.devioz.backend.repository.ProductoRepository;
 import com.devioz.backend.repository.UsuarioRepository;
+import com.devioz.backend.service.EmailService;
 import com.devioz.backend.service.VentaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,6 +17,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @RestController
@@ -25,16 +27,19 @@ public class VentaController {
     private final VentaService ventaService;
     private final UsuarioRepository usuarioRepository;
     private final ProductoRepository productoRepository;
+    private final EmailService emailService;
 
     public VentaController(VentaService ventaService,
                            UsuarioRepository usuarioRepository,
-                           ProductoRepository productoRepository) {
+                           ProductoRepository productoRepository,
+                           EmailService emailService) {
         this.ventaService = ventaService;
         this.usuarioRepository = usuarioRepository;
         this.productoRepository = productoRepository;
+        this.emailService = emailService;
     }
 
-    // 📌 Obtener todas las ventas (solo admins)
+    // 📌 Obtener todas las ventas (solo admins) - ✅ HISTORIAL PARA ADMIN
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public List<VentaDTO> getAllVentas() {
@@ -70,7 +75,7 @@ public class VentaController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // 📌 Crear una venta (compra) usando el usuario del token - ✅ ACTUALIZADO CON STOCK
+    // 📌 Crear una venta (compra) - ✅ ACTUALIZADO: Solo correo al usuario
     @PostMapping
     public ResponseEntity<?> crearVenta(@RequestParam Long productoId,
                                         @RequestParam Integer cantidad,
@@ -93,7 +98,7 @@ public class VentaController {
         Usuario usuario = usuarioOpt.get();
         Producto producto = productoOpt.get();
 
-        // ✅✅✅ NUEVA VALIDACIÓN: Verificar stock disponible
+        // ✅ Validar stock disponible
         if (producto.getStock() < cantidad) {
             return ResponseEntity.badRequest()
                     .body("Stock insuficiente. Stock disponible: " + producto.getStock() + ", solicitado: " + cantidad);
@@ -102,9 +107,9 @@ public class VentaController {
         // 3. Calcular total
         BigDecimal total = producto.getPrecio().multiply(BigDecimal.valueOf(cantidad));
 
-        // ✅✅✅ ACTUALIZAR STOCK (Disminuir) - PARTE CRÍTICA
+        // ✅ Actualizar stock
         producto.setStock(producto.getStock() - cantidad);
-        productoRepository.save(producto); // Guardar el nuevo stock
+        productoRepository.save(producto);
 
         // 4. Crear venta
         Venta venta = new Venta();
@@ -115,6 +120,12 @@ public class VentaController {
         venta.setFecha(LocalDateTime.now());
 
         Venta savedVenta = ventaService.saveVenta(venta);
+
+        // ✅✅✅ ACTUALIZADO: Solo enviar correo de confirmación al usuario
+        CompletableFuture.runAsync(() -> {
+            emailService.enviarConfirmacionCompra(usuario, savedVenta);
+            // ❌ NOTA: Se removió el correo al admin, ahora usa el historial de ventas
+        });
 
         return ResponseEntity.ok(new VentaDTO(savedVenta));
     }
