@@ -185,7 +185,7 @@ const ContactSection: React.FC = () => {
           <p className="text-gray-600 text-sm">Devíoz © 2025. All Rights Reserved.</p>
         </div>
 
-        {/* ✅ Modal Flotante */}
+        {/* Modal Flotante */}
         <Modal
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
