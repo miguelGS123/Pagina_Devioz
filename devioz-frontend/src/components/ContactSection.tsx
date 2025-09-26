@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Modal from "./Modal"; // ✅ Importar el modal
 
 const ContactSection: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -9,16 +10,27 @@ const ContactSection: React.FC = () => {
     mensaje: ""
   });
 
+  // ✅ Estados para el modal
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalData, setModalData] = useState({
+    title: "",
+    message: "",
+    type: "success" as "success" | "error"
+  });
+
   const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prevState) => ({
       ...prevState,
       [name]: value
     }));
+  };
+
+  const showModal = (title: string, message: string, type: "success" | "error") => {
+    setModalData({ title, message, type });
+    setModalOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,14 +44,29 @@ const ContactSection: React.FC = () => {
       });
 
       if (response.ok) {
-        alert("Mensaje enviado correctamente ✅");
+        // ✅ Mostrar modal de éxito
+        showModal(
+          "¡Mensaje Enviado!", 
+          "Tu mensaje ha sido enviado correctamente. Nos pondremos en contacto contigo pronto.", 
+          "success"
+        );
         setFormData({ asunto: "", correo: "", telefono: "", area: "", mensaje: "" });
       } else {
-        alert("Error al enviar el formulario ❌");
+        // ✅ Mostrar modal de error
+        showModal(
+          "Error al Enviar", 
+          "Hubo un problema al enviar el formulario. Por favor, intenta nuevamente.", 
+          "error"
+        );
       }
     } catch (error) {
       console.error("Error en fetch:", error);
-      alert("No se pudo conectar con el servidor ❌");
+      // ✅ Mostrar modal de error de conexión
+      showModal(
+        "Error de Conexión", 
+        "No se pudo conectar con el servidor. Verifica tu conexión e intenta nuevamente.", 
+        "error"
+      );
     }
   };
 
@@ -58,6 +85,8 @@ const ContactSection: React.FC = () => {
         {/* Formulario */}
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-md p-8">
 
+          {/* ... (tus campos del formulario se mantienen igual) ... */}
+          
           {/* Asunto */}
           <div className="mb-6">
             <label className="block text-gray-700 font-semibold mb-3">Asunto</label>
@@ -156,6 +185,16 @@ const ContactSection: React.FC = () => {
         <div className="text-center mt-12">
           <p className="text-gray-600 text-sm">Devíoz © 2025. All Rights Reserved.</p>
         </div>
+
+        {/* ✅ Modal Flotante */}
+        <Modal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          title={modalData.title}
+          message={modalData.message}
+          type={modalData.type}
+        />
+
       </div>
     </section>
   );
