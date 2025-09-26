@@ -17,7 +17,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, message, type }) 
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300 scale-100">
         {/* Header */}
         <div className={`p-6 rounded-t-xl ${
-          type === 'success' ? 'bg-green-500' : 'bg-red-500'
+          type === 'success' ? 'bg-teal-600' : 'bg-red-500'
         }`}>
           <div className="flex items-center justify-center">
             {type === 'success' ? (
@@ -41,7 +41,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, message, type }) 
             onClick={onClose}
             className={`px-6 py-2 rounded-lg font-semibold text-white transition-colors duration-300 ${
               type === 'success' 
-                ? 'bg-green-500 hover:bg-green-600' 
+                ? 'bg-teal-600' 
                 : 'bg-red-500 hover:bg-red-600'
             }`}
           >

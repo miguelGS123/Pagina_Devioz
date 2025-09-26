@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Modal from "./Modal"; // ✅ Importar el modal
+import Modal from "./Modal"; // 
 
 const ContactSection: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -10,7 +10,6 @@ const ContactSection: React.FC = () => {
     mensaje: ""
   });
 
-  // ✅ Estados para el modal
   const [modalOpen, setModalOpen] = useState(false);
   const [modalData, setModalData] = useState({
     title: "",
@@ -44,7 +43,7 @@ const ContactSection: React.FC = () => {
       });
 
       if (response.ok) {
-        // ✅ Mostrar modal de éxito
+        
         showModal(
           "¡Mensaje Enviado!", 
           "Tu mensaje ha sido enviado correctamente. Nos pondremos en contacto contigo pronto.", 
@@ -52,7 +51,7 @@ const ContactSection: React.FC = () => {
         );
         setFormData({ asunto: "", correo: "", telefono: "", area: "", mensaje: "" });
       } else {
-        // ✅ Mostrar modal de error
+      
         showModal(
           "Error al Enviar", 
           "Hubo un problema al enviar el formulario. Por favor, intenta nuevamente.", 
@@ -61,7 +60,7 @@ const ContactSection: React.FC = () => {
       }
     } catch (error) {
       console.error("Error en fetch:", error);
-      // ✅ Mostrar modal de error de conexión
+      
       showModal(
         "Error de Conexión", 
         "No se pudo conectar con el servidor. Verifica tu conexión e intenta nuevamente.", 
