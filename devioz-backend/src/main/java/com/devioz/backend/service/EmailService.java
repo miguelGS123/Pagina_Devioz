@@ -87,7 +87,7 @@ public class EmailService {
         }
     }
 
-    // 🛒 CONFIRMACIÓN DE COMPRA - Solo correo al usuario (✅ MANTENIDO)
+    // CONFIRMACIÓN DE COMPRA - Solo correo al usuario
     @Async
     public void enviarConfirmacionCompra(Usuario usuario, Venta venta) {
         try {
@@ -131,10 +131,7 @@ public class EmailService {
         }
     }
 
-    // 🛒 NOTIFICACIÓN DE NUEVA VENTA - ❌ ELIMINADO (Admin ve en panel)
-    // Este método fue removido para usar el historial de ventas del panel admin
-
-    // 🔹 Método para asignar imagen según el área
+    // Método para asignar imagen según el área
     private String obtenerImagenPorArea(String area) {
         return switch (area) {
             case "Desarrollo Web" -> "web.png";

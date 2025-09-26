@@ -4,7 +4,7 @@ const ContactSection: React.FC = () => {
   const [formData, setFormData] = useState({
     asunto: "",
     correo: "",
-    telefono: "", // ✅ nuevo campo
+    telefono: "", 
     area: "",
     mensaje: ""
   });

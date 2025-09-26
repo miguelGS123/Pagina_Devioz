@@ -98,7 +98,7 @@ public class VentaController {
         Usuario usuario = usuarioOpt.get();
         Producto producto = productoOpt.get();
 
-        // ✅ Validar stock disponible
+        // Validar stock disponible
         if (producto.getStock() < cantidad) {
             return ResponseEntity.badRequest()
                     .body("Stock insuficiente. Stock disponible: " + producto.getStock() + ", solicitado: " + cantidad);
@@ -121,16 +121,13 @@ public class VentaController {
 
         Venta savedVenta = ventaService.saveVenta(venta);
 
-        // ✅✅✅ ACTUALIZADO: Solo enviar correo de confirmación al usuario
         CompletableFuture.runAsync(() -> {
             emailService.enviarConfirmacionCompra(usuario, savedVenta);
-            // ❌ NOTA: Se removió el correo al admin, ahora usa el historial de ventas
         });
 
         return ResponseEntity.ok(new VentaDTO(savedVenta));
     }
 
-    // 📌 Eliminar una venta (usuario dueño o admin)
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteVenta(@PathVariable Long id, Authentication authentication) {
         Optional<Venta> ventaOpt = ventaService.getVentaById(id);
