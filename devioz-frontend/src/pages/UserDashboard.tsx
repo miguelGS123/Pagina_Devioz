@@ -16,7 +16,7 @@ const UserDashboard: React.FC = () => {
 
       // 🔹 Traer info del backend para tener datos actualizados
       axios
-        .get(`http://localhost:8080/api/usuarios/${parsedUser.id}`, {
+        .get(`http://localhost:8008/api/usuarios/${parsedUser.id}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((res) => setUser(res.data))
@@ -24,7 +24,7 @@ const UserDashboard: React.FC = () => {
 
       // 🔹 Traer historial de compras
       axios
-        .get("http://localhost:8080/api/ventas/mis-ventas", {
+        .get("http://localhost:8008/api/ventas/mis-ventas", {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((res) => setVentas(res.data))
