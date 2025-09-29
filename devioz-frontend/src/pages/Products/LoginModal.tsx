@@ -34,42 +34,30 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
-        credentials: "include",
       });
 
-      const responseText = await res.text();
+      const data = await res.json();
 
       if (!res.ok) {
-        try {
-          const errorData = JSON.parse(responseText);
-          throw new Error(errorData.message || `Error ${res.status}`);
-        } catch {
-          throw new Error(
-            responseText || `Error ${res.status}: ${res.statusText}`
-          );
-        }
+        throw new Error(data.message || `Error ${res.status}`);
       }
-
-      const data = JSON.parse(responseText);
 
       if (data.token) {
         localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("user", JSON.stringify(data.usuario)); // ⚡ asegurarse que coincide con backend
 
-        // 🔹 Disparar evento para refrescar otros componentes
+        // 🔹 Evento para actualizar UI
         window.dispatchEvent(new Event("storage"));
-
-        alert(isRegister ? "✅ Registro exitoso" : "✅ Login exitoso");
 
         onClose();
 
-        // 🔹 Redirigir siempre al perfil de usuario
-        navigate("/productos");
+        // 🔹 Redirige al dashboard de usuario
+        navigate("/usuario");
       } else {
-        throw new Error("No se recibió token en la respuesta");
+        throw new Error("No se recibió token");
       }
     } catch (err: any) {
-      console.error("Error completo:", err);
+      console.error(err);
       setError(err.message || "Error en el proceso");
     } finally {
       setLoading(false);

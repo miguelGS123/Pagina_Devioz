@@ -1,7 +1,17 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import type { Product } from "./ProductsPage";
 import { Link } from "react-router-dom";
+
+// ✅ Definición del tipo Product
+export interface Product {
+  id: number;
+  nombre: string;
+  descripcion?: string;
+  precio: number;
+  categoria?: string;
+  rating?: number;
+  imagen?: string;
+}
 
 interface Props {
   product: Product;
@@ -9,10 +19,8 @@ interface Props {
 }
 
 const ProductCard: React.FC<Props> = ({ product, onAddToCart }) => {
-  // Usa el campo correcto que viene del backend
   const [imgSrc, setImgSrc] = useState(product.imagen || "/logo-devioz.png");
 
-  // Normaliza los valores para evitar errores en el render
   const nombre = product.nombre ?? "Producto sin nombre";
   const categoria = product.categoria ?? "General";
   const precio = product.precio != null ? Number(product.precio) : 0;
@@ -21,9 +29,8 @@ const ProductCard: React.FC<Props> = ({ product, onAddToCart }) => {
   return (
     <motion.div
       whileHover={{ y: -4 }}
-      className="bg-white rounded-2xl shadow-md hover:shadow-xl overflow-hidden transition flex flex-col"
+      className="bg-white rounded-2xl shadow-md hover:shadow-xl overflow-hidden transition flex flex-col text-black"
     >
-      {/* Imagen clickeable */}
       <Link to={`/producto/${product.id}`}>
         <div className="relative w-full h-56 bg-gray-100 flex items-center justify-center overflow-hidden cursor-pointer">
           <img
@@ -36,22 +43,18 @@ const ProductCard: React.FC<Props> = ({ product, onAddToCart }) => {
         </div>
       </Link>
 
-      {/* Información */}
-      <div className="p-4 flex flex-col gap-2 text-gray-900 flex-1">
+      <div className="p-4 flex flex-col gap-2 text-black flex-1">
         <h3 className="font-semibold text-lg leading-tight line-clamp-2 min-h-[3.5rem]">
           {nombre}
         </h3>
 
-        <p className="text-sm text-gray-500">{categoria}</p>
+        <p className="text-sm text-gray-600">{categoria}</p>
 
         <div className="flex items-center justify-between mt-auto">
           <span className="text-teal-600 font-bold text-xl">
             S/ {precio.toFixed(2)}
           </span>
-          <span
-            className="text-yellow-500"
-            aria-label={`rating ${rating}`}
-          >
+          <span className="text-yellow-500" aria-label={`rating ${rating}`}>
             {"★".repeat(rating)}{"☆".repeat(5 - rating)}
           </span>
         </div>

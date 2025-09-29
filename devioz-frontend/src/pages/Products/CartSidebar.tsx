@@ -1,26 +1,37 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Minus, Trash2 } from "lucide-react";
-import type { CartItem } from "./ProductsPage";
+import type { Product } from "./ProductCard";
+
+// ✅ Tipo del item del carrito
+export interface CartItem {
+  product: Product;
+  qty: number;
+}
 
 interface Props {
   open: boolean;
   onClose: () => void;
   items: CartItem[];
-  onQtyChange: (id: number, qty: number) => void;   // ✅ ahora number
-  onRemove: (id: number) => void;                  // ✅ ahora number
+  onQtyChange: (id: number, qty: number) => void;
+  onRemove: (id: number) => void;
   total: number;
   onCheckout: () => void;
 }
 
 const CartSidebar: React.FC<Props> = ({
-  open, onClose, items, onQtyChange, onRemove, total, onCheckout
+  open,
+  onClose,
+  items,
+  onQtyChange,
+  onRemove,
+  total,
+  onCheckout
 }) => {
   return (
     <AnimatePresence>
       {open && (
         <>
-          {/* overlay */}
           <motion.div
             className="fixed inset-0 bg-black/40 z-40"
             initial={{ opacity: 0 }}
@@ -28,71 +39,54 @@ const CartSidebar: React.FC<Props> = ({
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
-          {/* panel */}
           <motion.aside
-            className="fixed right-0 top-0 h-full w-[360px] max-w-[90vw] bg-white z-50 shadow-2xl flex flex-col"
+            className="fixed right-0 top-0 h-full w-[360px] max-w-[90vw] bg-white z-50 shadow-2xl flex flex-col text-black"
             initial={{ x: 420 }}
             animate={{ x: 0 }}
             exit={{ x: 420 }}
             transition={{ type: "tween", duration: 0.25 }}
           >
             <div className="p-4 border-b flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Tu carrito</h2>
+              <h2 className="text-lg font-semibold">Tu carrito</h2>
               <button onClick={onClose} className="p-2 rounded hover:bg-gray-100">
                 <X size={20} />
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {items.length === 0 && (
-                <p className="text-gray-500">Aún no agregaste productos.</p>
-              )}
+              {items.length === 0 && <p className="text-gray-500">Aún no agregaste productos.</p>}
 
               {items.map(({ product, qty }) => (
                 <div key={product.id} className="flex gap-3 items-center">
-                  {/* ✅ nombres correctos */}
                   <img
                     src={product.imagen}
                     alt={product.nombre}
                     className="w-16 h-16 object-cover rounded-lg border"
                   />
 
-                  <div className="flex-1 text-gray-900">
+                  <div className="flex-1">
                     <p className="font-medium">{product.nombre}</p>
-                    <p className="text-sm text-gray-600">
-                      ${product.precio.toFixed(2)}
-                    </p>
+                    <p className="text-sm text-gray-600">${product.precio.toFixed(2)}</p>
 
                     <div className="mt-2 inline-flex items-center gap-2">
-                      <button
-                        className="p-1 rounded border"
-                        onClick={() => onQtyChange(product.id, qty - 1)}
-                      >
+                      <button className="p-1 rounded border" onClick={() => onQtyChange(product.id, qty - 1)}>
                         <Minus size={16} />
                       </button>
-                      <span className="min-w-[2ch] text-center text-gray-900">
-                        {qty}
-                      </span>
-                      <button
-                        className="p-1 rounded border"
-                        onClick={() => onQtyChange(product.id, qty + 1)}
-                      >
+                      <span className="min-w-[2ch] text-center">{qty}</span>
+                      <button className="p-1 rounded border" onClick={() => onQtyChange(product.id, qty + 1)}>
                         <Plus size={16} />
                       </button>
                     </div>
                   </div>
 
-                  <button
-                    className="p-2 text-red-600 hover:bg-red-50 rounded"
-                    onClick={() => onRemove(product.id)}
-                  >
+                  <button className="p-2 text-red-600 hover:bg-red-50 rounded" onClick={() => onRemove(product.id)}>
                     <Trash2 size={18} />
                   </button>
                 </div>
               ))}
             </div>
 
-            <div className="p-4 border-t text-gray-900">
+            <div className="p-4 border-t">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm text-gray-600">Total</span>
                 <span className="text-xl font-bold">${total.toFixed(2)}</span>

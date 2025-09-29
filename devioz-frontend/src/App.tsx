@@ -15,47 +15,39 @@ import ChatButton from "./components/ChatButton";
 // Páginas
 import ProductsPage from "./pages/Products/ProductsPage";
 import ProductDetailPage from "./pages/Products/ProductDetailPage";
-import UserDashboard from "./pages/UserDashboard"; // nuevo
+import UserDashboard from "./pages/UserDashboard";
 
 // Rutas protegidas
 import ProtectedRoute from "./routes/ProtectedRoute";
 
-// Componente para la Landing
-const Landing: React.FC = () => {
-  return (
-    <>
-      <SocialSidebar />
-      <ScrollToTop />
-      <Navbar />
-      <Hero />
-      <FooterSection />
-      <ServicesSection />
-      <CharacteristicSsection />
-      <PortfolioSection />
-      <FooterSection2 />
-      <VentajasSection />
-      <ContactSection />
-      <ChatButton />
-    </>
-  );
-};
+const Landing: React.FC = () => (
+  <>
+    <SocialSidebar />
+    <ScrollToTop />
+    <Navbar />
+    <Hero />
+    <FooterSection />
+    <ServicesSection />
+    <CharacteristicSsection />
+    <PortfolioSection />
+    <FooterSection2 />
+    <VentajasSection />
+    <ContactSection />
+    <ChatButton />
+  </>
+);
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Landing */}
         <Route path="/" element={<Landing />} />
-
-        {/* Productos */}
         <Route path="/productos" element={<ProductsPage />} />
         <Route path="/producto/:id" element={<ProductDetailPage />} />
-
-        {/* 🔹 Ruta protegida del usuario */}
         <Route
           path="/usuario"
           element={
-            <ProtectedRoute role="USUARIO">
+            <ProtectedRoute role="ROL_USUARIO">
               <UserDashboard />
             </ProtectedRoute>
           }
