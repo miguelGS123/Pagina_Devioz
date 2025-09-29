@@ -1,45 +1,54 @@
-import React from "react";
+// src/pages/Products/ProductDetailPage.tsx
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import type { Product } from "./ProductsPage";
 
-// 🔹 Reutilizamos los mismos productos de prueba
-const PRODUCTS: Product[] = [
-  {
-    id: "t1",
-    name: "Teclado Gamer Teros TE-GK650, Español, Multimedia, retro-iluminado, Negro, USB.",
-    price: 58,
-    category: "Teclados",
-    rating: 4,
-    image: "/productos/teclado01.png",
-  },
-  {
-    id: "t2",
-    name: "Teclado de membrana GAMER K500F HP",
-    price: 69.9,
-    category: "Teclados",
-    rating: 5,
-    image: "/productos/teclado02.png",
-  },
-  {
-    id: "t3",
-    name: "MINI TECLADO GAMER DE 1 MANO / CABLE 1.6 METROS / 35 TECLAS / A PRUEBA DE AGUA | YUS",
-    price: 79,
-    category: "Teclados",
-    rating: 4,
-    image: "/productos/teclado03.png",
-  },
-];
+interface Product {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  imagen: string;
+  precio: number;
+}
 
 const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const product = PRODUCTS.find((p) => p.id === id);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!product) {
+  // 🔹 Cargar el producto desde el backend
+  useEffect(() => {
+    if (!id) return;
+
+    fetch(`http://localhost:8008/api/productos/${id}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("No se pudo cargar el producto");
+        return res.json();
+      })
+      .then((data) => {
+        setProduct(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, [id]);
+
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-900">
-        <p>Producto no encontrado 🚨</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-700">Cargando producto...</p>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-red-600">Producto no encontrado 🚨</p>
       </div>
     );
   }
@@ -57,8 +66,8 @@ const ProductDetailPage: React.FC = () => {
         {/* Imagen */}
         <div className="flex items-center justify-center bg-gray-100 rounded-xl overflow-hidden h-[400px]">
           <img
-            src={product.image}
-            alt={product.name}
+            src={product.imagen ? `/${product.imagen}` : "/placeholder.png"}
+            alt={product.nombre}
             className="object-contain w-full h-full"
           />
         </div>
@@ -66,18 +75,12 @@ const ProductDetailPage: React.FC = () => {
         {/* Información */}
         <div className="flex flex-col justify-between text-gray-900">
           <div>
-            <h1 className="text-2xl font-bold mb-4">{product.name}</h1>
-            <p className="text-lg text-gray-700 mb-6">
-              Aquí puedes añadir una descripción detallada del producto, sus
-              características, compatibilidad y beneficios. 📝
-            </p>
+            <h1 className="text-2xl font-bold mb-4">{product.nombre}</h1>
+            <p className="text-lg text-gray-700 mb-6">{product.descripcion}</p>
 
             <div className="flex items-center gap-4 mb-6">
               <span className="text-teal-600 font-bold text-3xl">
-                S/ {product.price.toFixed(2)}
-              </span>
-              <span className="text-yellow-500 text-lg">
-                {"★".repeat(product.rating)}{"☆".repeat(5 - product.rating)}
+                S/ {product.precio.toFixed(2)}
               </span>
             </div>
           </div>

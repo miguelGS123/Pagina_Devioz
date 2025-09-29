@@ -7,8 +7,8 @@ interface Props {
   open: boolean;
   onClose: () => void;
   items: CartItem[];
-  onQtyChange: (id: string, qty: number) => void;
-  onRemove: (id: string) => void;
+  onQtyChange: (id: number, qty: number) => void;   // ✅ ahora number
+  onRemove: (id: number) => void;                  // ✅ ahora number
   total: number;
   onCheckout: () => void;
 }
@@ -44,24 +44,48 @@ const CartSidebar: React.FC<Props> = ({
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {items.length === 0 && <p className="text-gray-500">Aún no agregaste productos.</p>}
+              {items.length === 0 && (
+                <p className="text-gray-500">Aún no agregaste productos.</p>
+              )}
+
               {items.map(({ product, qty }) => (
                 <div key={product.id} className="flex gap-3 items-center">
-                  <img src={product.image} alt={product.name} className="w-16 h-16 object-cover rounded-lg border" />
+                  {/* ✅ nombres correctos */}
+                  <img
+                    src={product.imagen}
+                    alt={product.nombre}
+                    className="w-16 h-16 object-cover rounded-lg border"
+                  />
+
                   <div className="flex-1 text-gray-900">
-                    <p className="font-medium">{product.name}</p>
-                    <p className="text-sm text-gray-600">${product.price.toFixed(2)}</p>
+                    <p className="font-medium">{product.nombre}</p>
+                    <p className="text-sm text-gray-600">
+                      ${product.precio.toFixed(2)}
+                    </p>
+
                     <div className="mt-2 inline-flex items-center gap-2">
-                      <button className="p-1 rounded border" onClick={() => onQtyChange(product.id, qty - 1)}>
+                      <button
+                        className="p-1 rounded border"
+                        onClick={() => onQtyChange(product.id, qty - 1)}
+                      >
                         <Minus size={16} />
                       </button>
-                      <span className="min-w-[2ch] text-center text-gray-900">{qty}</span>
-                      <button className="p-1 rounded border" onClick={() => onQtyChange(product.id, qty + 1)}>
+                      <span className="min-w-[2ch] text-center text-gray-900">
+                        {qty}
+                      </span>
+                      <button
+                        className="p-1 rounded border"
+                        onClick={() => onQtyChange(product.id, qty + 1)}
+                      >
                         <Plus size={16} />
                       </button>
                     </div>
                   </div>
-                  <button className="p-2 text-red-600 hover:bg-red-50 rounded" onClick={() => onRemove(product.id)}>
+
+                  <button
+                    className="p-2 text-red-600 hover:bg-red-50 rounded"
+                    onClick={() => onRemove(product.id)}
+                  >
                     <Trash2 size={18} />
                   </button>
                 </div>
@@ -73,6 +97,7 @@ const CartSidebar: React.FC<Props> = ({
                 <span className="text-sm text-gray-600">Total</span>
                 <span className="text-xl font-bold">${total.toFixed(2)}</span>
               </div>
+
               <button
                 onClick={onCheckout}
                 className="w-full bg-teal-600 text-white py-2 rounded-xl shadow hover:shadow-lg"

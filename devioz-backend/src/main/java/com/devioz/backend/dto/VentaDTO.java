@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class VentaDTO {
+
     private Long id;
     private String usuarioNombre;
     private ProductoDTO producto;
@@ -30,26 +31,29 @@ public class VentaDTO {
     public BigDecimal getTotal() { return total; }
     public LocalDateTime getFecha() { return fecha; }
 
-    // DTO interno para Producto
+    // ✅ DTO interno para el Producto
     public static class ProductoDTO {
         private Long id;
         private String nombre;
         private String descripcion;
         private BigDecimal precio;
-        private Integer stock; // ✅ NUEVO CAMPO AGREGADO
+        private Integer stock;
+        private String categoria;   // 🟩 NUEVO CAMPO
 
         public ProductoDTO(Producto producto) {
             this.id = producto.getId();
             this.nombre = producto.getNombre();
             this.descripcion = producto.getDescripcion();
             this.precio = producto.getPrecio();
-            this.stock = producto.getStock(); // ✅ NUEVA ASIGNACIÓN
+            this.stock = producto.getStock();
+            this.categoria = producto.getCategoria(); // 🟩 NUEVA ASIGNACIÓN
         }
 
         public Long getId() { return id; }
         public String getNombre() { return nombre; }
         public String getDescripcion() { return descripcion; }
         public BigDecimal getPrecio() { return precio; }
-        public Integer getStock() { return stock; } // ✅ NUEVO GETTER
+        public Integer getStock() { return stock; }
+        public String getCategoria() { return categoria; } // 🟩 NUEVO GETTER
     }
 }

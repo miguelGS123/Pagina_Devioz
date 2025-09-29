@@ -9,7 +9,14 @@ interface Props {
 }
 
 const ProductCard: React.FC<Props> = ({ product, onAddToCart }) => {
-  const [imgSrc, setImgSrc] = useState(product.image);
+  // Usa el campo correcto que viene del backend
+  const [imgSrc, setImgSrc] = useState(product.imagen || "/logo-devioz.png");
+
+  // Normaliza los valores para evitar errores en el render
+  const nombre = product.nombre ?? "Producto sin nombre";
+  const categoria = product.categoria ?? "General";
+  const precio = product.precio != null ? Number(product.precio) : 0;
+  const rating = product.rating != null ? product.rating : 0;
 
   return (
     <motion.div
@@ -21,7 +28,7 @@ const ProductCard: React.FC<Props> = ({ product, onAddToCart }) => {
         <div className="relative w-full h-56 bg-gray-100 flex items-center justify-center overflow-hidden cursor-pointer">
           <img
             src={imgSrc}
-            alt={product.name}
+            alt={nombre}
             className="w-full h-full object-contain"
             onError={() => setImgSrc("/logo-devioz.png")}
           />
@@ -32,15 +39,20 @@ const ProductCard: React.FC<Props> = ({ product, onAddToCart }) => {
       {/* Información */}
       <div className="p-4 flex flex-col gap-2 text-gray-900 flex-1">
         <h3 className="font-semibold text-lg leading-tight line-clamp-2 min-h-[3.5rem]">
-          {product.name}
+          {nombre}
         </h3>
+
+        <p className="text-sm text-gray-500">{categoria}</p>
 
         <div className="flex items-center justify-between mt-auto">
           <span className="text-teal-600 font-bold text-xl">
-            S/ {product.price.toFixed(2)}
+            S/ {precio.toFixed(2)}
           </span>
-          <span className="text-yellow-500" aria-label={`rating ${product.rating}`}>
-            {"★".repeat(product.rating)}{"☆".repeat(5 - product.rating)}
+          <span
+            className="text-yellow-500"
+            aria-label={`rating ${rating}`}
+          >
+            {"★".repeat(rating)}{"☆".repeat(5 - rating)}
           </span>
         </div>
 

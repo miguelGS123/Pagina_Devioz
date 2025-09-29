@@ -27,20 +27,23 @@ public class SecurityConfig {
         this.jwtFilter = jwtFilter;
     }
 
+    // 👉 Password encoder
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    // 👉 AuthenticationManager para login
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
 
+    // 👉 Configuración de CORS
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // frontend
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control", "X-Requested-With"));
         configuration.setAllowCredentials(true);
@@ -51,36 +54,38 @@ public class SecurityConfig {
         return source;
     }
 
-@Bean
-public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http
-        .csrf(csrf -> csrf.disable())
-        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authorizeHttpRequests(auth -> auth
-            // Rutas públicas
-            .requestMatchers("/auth/**").permitAll()
-            .requestMatchers("/api/formulario/**").permitAll()
-            .requestMatchers("/api/chat/**").permitAll()
-            .requestMatchers("/api/hello").permitAll()
+    // 👉 Seguridad HTTP
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            // 🔑 Habilita CORS antes que CSRF
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                // Rutas públicas
+                .requestMatchers("/auth/**").permitAll()
+                .requestMatchers("/api/formulario/**").permitAll()
+                .requestMatchers("/api/chat/**").permitAll()
+                .requestMatchers("/api/hello").permitAll()
 
-            // Productos - CORREGIDO: usar ROL_ADMIN (sin ROLE_ extra)
-            .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
-            .requestMatchers(HttpMethod.POST, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
-            .requestMatchers(HttpMethod.PUT, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
-            .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
+                // Productos
+                .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
+                .requestMatchers(HttpMethod.PUT, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
+                .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
 
-            // Ventas - CORREGIDO: usar ROL_ADMIN (sin ROLE_ extra)
-            .requestMatchers(HttpMethod.GET, "/api/ventas").hasAuthority("ROL_ADMIN")
-            .requestMatchers("/api/ventas/mis-ventas").hasAuthority("ROL_USUARIO")
-            .requestMatchers(HttpMethod.POST, "/api/ventas/**").hasAuthority("ROL_USUARIO")
-            .requestMatchers(HttpMethod.DELETE, "/api/ventas/**").hasAnyAuthority("ROL_ADMIN", "ROL_USUARIO")
+                // Ventas
+                .requestMatchers(HttpMethod.GET, "/api/ventas").hasAuthority("ROL_ADMIN")
+                .requestMatchers("/api/ventas/mis-ventas").hasAuthority("ROL_USUARIO")
+                .requestMatchers(HttpMethod.POST, "/api/ventas/**").hasAuthority("ROL_USUARIO")
+                .requestMatchers(HttpMethod.DELETE, "/api/ventas/**").hasAnyAuthority("ROL_ADMIN", "ROL_USUARIO")
 
-            // Cualquier otra petición necesita autenticación
-            .anyRequest().authenticated()
-        )
-        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                // Cualquier otra petición requiere autenticación
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
-    return http.build();
-}
+        return http.build();
+    }
 }

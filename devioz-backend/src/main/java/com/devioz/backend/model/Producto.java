@@ -28,9 +28,13 @@ public class Producto {
     @JsonIgnore
     private Usuario creadoPor;
 
-    // ✅ NUEVO CAMPO AGREGADO
+    // ✅ STOCK
     @Column(nullable = false)
     private Integer stock = 0;
+
+    // ✅ NUEVO CAMPO: CATEGORÍA
+    @Column(nullable = false, length = 50)
+    private String categoria = "General";
 
     // ======================
     // Getters y Setters
@@ -84,12 +88,20 @@ public class Producto {
         this.creadoPor = creadoPor;
     }
 
-    // ✅ NUEVO GETTER Y SETTER PARA STOCK
     public Integer getStock() {
         return stock;
     }
 
     public void setStock(Integer stock) {
         this.stock = stock;
+    }
+
+    // ✅ GETTER y SETTER para categoría
+    public String getCategoria() {
+        return categoria;
+    }
+
+    public void setCategoria(String categoria) {
+        this.categoria = categoria;
     }
 }

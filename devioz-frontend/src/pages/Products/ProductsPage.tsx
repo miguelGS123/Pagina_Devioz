@@ -1,15 +1,18 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import ProductsHeader from "./ProductsHeader";
 import ProductsGrid from "./ProductsGrid";
 import CartSidebar from "./CartSidebar";
 
+// Tipos que coinciden con tu backend
 export interface Product {
-  id: string;
-  name: string;
-  price: number;
-  category: "Teclados" | "Mouse" | "Monitores" | "Laptops" | "Case" | "Otros";
-  rating: number; // 1..5
-  image: string;
+  id: number;
+  nombre: string;
+  descripcion: string;
+  precio: number;
+  imagen: string;
+  stock: number;
+  categoria: string; 
+  rating?: number;
 }
 
 export interface CartItem {
@@ -17,58 +20,51 @@ export interface CartItem {
   qty: number;
 }
 
-// Datos de prueba (usa tus imágenes en /public/productos)
-const PRODUCTS: Product[] = [
-  {
-    id: "t1",
-    name: "Teclado Gamer Teros TE-GK650, Español, Multimedia, retro-iluminado, Negro, USB.",
-    price: 58,
-    category: "Teclados",
-    rating: 4,
-    image: "/productos/teclado01.png"
-  },
-  {
-    id: "t2",
-    name: "Teclado de membrana GAMER K500F HP",
-    price: 69.9,
-    category: "Teclados",
-    rating: 5,
-    image: "/productos/teclado02.png"
-  },
-  {
-    id: "t3",
-    name: "MINI TECLADO GAMER DE 1 MANO / CABLE 1.6 METROS / 35 TECLAS / A PRUEBA DE AGUA | YUS",
-    price: 79,
-    category: "Teclados",
-    rating: 4,
-    image: "/productos/teclado03.png"
-  },
-];
-
 const ProductsPage: React.FC = () => {
+  const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("Todos");
   const [sort, setSort] = useState<string>("relevance");
   const [cartOpen, setCartOpen] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  // ✅ Llamada a la API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch("http://localhost:8008/api/productos"); // Ajusta el puerto si es distinto
+        if (!res.ok) throw new Error("Error al cargar productos");
+        const data = await res.json();
+        setProducts(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  // ✅ Filtros
   const filtered = useMemo(() => {
-    let list = PRODUCTS.filter(p =>
-      p.name.toLowerCase().includes(search.toLowerCase())
+    let list = products.filter(p =>
+      p.nombre.toLowerCase().includes(search.toLowerCase())
     );
+
     if (category !== "Todos") {
-      list = list.filter(p => p.category === (category as Product["category"]));
+      list = list.filter(p => p.categoria === category);
     }
 
     switch (sort) {
-      case "price-asc": list = [...list].sort((a, b) => a.price - b.price); break;
-      case "price-desc": list = [...list].sort((a, b) => b.price - a.price); break;
-      case "rating": list = [...list].sort((a, b) => b.rating - a.rating); break;
+      case "price-asc": list = [...list].sort((a, b) => a.precio - b.precio); break;
+      case "price-desc": list = [...list].sort((a, b) => b.precio - a.precio); break;
       default: break; // relevance = sin ordenar
     }
     return list;
-  }, [search, category, sort]);
+  }, [search, category, sort, products]);
 
+  // ✅ Agregar al carrito
   const addToCart = (product: Product) => {
     setCart(prev => {
       const idx = prev.findIndex(ci => ci.product.id === product.id);
@@ -79,10 +75,9 @@ const ProductsPage: React.FC = () => {
       }
       return [...prev, { product, qty: 1 }];
     });
-    // ❌ Ya no abrimos el carrito automáticamente
   };
 
-  const changeQty = (id: string, qty: number) => {
+  const changeQty = (id: number, qty: number) => {
     setCart(prev =>
       prev
         .map(ci => (ci.product.id === id ? { ...ci, qty: Math.max(1, qty) } : ci))
@@ -90,11 +85,13 @@ const ProductsPage: React.FC = () => {
     );
   };
 
-  const removeItem = (id: string) => {
+  const removeItem = (id: number) => {
     setCart(prev => prev.filter(ci => ci.product.id !== id));
   };
 
-  const total = cart.reduce((acc, it) => acc + it.product.price * it.qty, 0);
+  const total = cart.reduce((acc, it) => acc + it.product.precio * it.qty, 0);
+
+  if (loading) return <p className="text-center mt-10">Cargando productos...</p>;
 
   return (
     <div className="min-h-screen bg-gray-50">
