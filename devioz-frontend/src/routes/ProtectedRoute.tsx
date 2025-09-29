@@ -13,7 +13,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, role }) => {
   let user = null;
 
   try {
-    // ✅ Solo parseamos si existe y no es "undefined" o vacío
     if (userStr && userStr !== "undefined") {
       user = JSON.parse(userStr);
     }
@@ -21,17 +20,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, role }) => {
     console.error("Error al parsear el usuario:", err);
   }
 
-  // 🔒 Si no hay token o no hay usuario -> redirige al login
+  // ❌ Si no hay token o usuario -> redirigir al login
   if (!token || !user) {
     return <Navigate to="/" replace />;
   }
 
-  // 🔒 Si hay rol definido y no coincide -> acceso denegado
-  if (role && user.role !== role) {
+  // ❌ Si se requiere un rol y no coincide -> acceso denegado
+  if (role && user.rol !== role) {
     return <Navigate to="/" replace />;
   }
 
-  // ✅ Si pasa todo, renderiza el componente protegido
   return <>{children}</>;
 };
 
