@@ -16,6 +16,8 @@ import ChatButton from "./components/ChatButton";
 import ProductsPage from "./pages/Products/ProductsPage";
 import ProductDetailPage from "./pages/Products/ProductDetailPage";
 import UserDashboard from "./pages/UserDashboard/UserDashboard";
+import AdminDashboard from "./pages/AdminDashboard/AdminDashboard";  // ✅
+import VendorDashboard from "./pages/VendedorDashboard/VendedorDashboard"; // ✅
 
 // Rutas protegidas
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -41,14 +43,37 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Página principal */}
         <Route path="/" element={<Landing />} />
+
+        {/* Página de productos pública */}
         <Route path="/productos" element={<ProductsPage />} />
         <Route path="/producto/:id" element={<ProductDetailPage />} />
+
+        {/* Dashboards protegidos */}
         <Route
           path="/usuario"
           element={
             <ProtectedRoute role="ROL_USUARIO">
               <UserDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute role="ROL_ADMIN">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/vendedor/dashboard"
+          element={
+            <ProtectedRoute role="ROL_VENDEDOR">
+              <VendorDashboard />
             </ProtectedRoute>
           }
         />

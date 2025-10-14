@@ -11,9 +11,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, role }) => {
   const userStr = localStorage.getItem("user");
   const user = userStr && userStr !== "undefined" ? JSON.parse(userStr) : null;
 
-  if (!token || !user) return <Navigate to="/" replace />;
+  // Si no hay sesión → redirigir a inicio
+  if (!token || !user) return <Navigate to="/productos" replace />;
 
-  if (role && user.rol !== role) return <Navigate to="/" replace />;
+  // Si el rol no coincide con el requerido
+  if (role && user.rol !== role) return <Navigate to="/productos" replace />;
 
   return <>{children}</>;
 };

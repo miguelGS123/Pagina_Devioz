@@ -42,22 +42,33 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
         throw new Error(data.message || `Error ${res.status}`);
       }
 
-      if (data.token) {
+      if (data.token && data.usuario) {
+        // ✅ Guardar token y usuario
         localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.usuario)); // ⚡ asegurarse que coincide con backend
+        localStorage.setItem("user", JSON.stringify(data.usuario));
 
-        // 🔹 Evento para actualizar UI
+        // Notificar cambios globales
         window.dispatchEvent(new Event("storage"));
 
         onClose();
 
-        // 🔹 Redirige al dashboard de usuario
-        navigate("/usuario");
+        // ✅ Redirigir según el rol del usuario
+        switch (data.usuario.rol) {
+          case "ROL_ADMIN":
+            navigate("/admin/dashboard");
+            break;
+          case "ROL_VENDEDOR":
+            navigate("/vendedor/dashboard");
+            break;
+          default:
+            navigate("/usuario");
+            break;
+        }
       } else {
-        throw new Error("No se recibió token");
+        throw new Error("No se recibió token o usuario válido");
       }
     } catch (err: any) {
-      console.error(err);
+      console.error("Error en login/register:", err);
       setError(err.message || "Error en el proceso");
     } finally {
       setLoading(false);
