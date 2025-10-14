@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import ProductsHeader from "./ProductsHeader";
 import ProductsGrid from "./ProductsGrid";
 import CartSidebar from "./CartSidebar";
@@ -11,7 +12,7 @@ export interface Product {
   precio: number;
   imagen: string;
   stock: number;
-  categoria: string; 
+  categoria: string;
   rating?: number;
 }
 
@@ -29,11 +30,34 @@ const ProductsPage: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const navigate = useNavigate();
+
+  // ✅ Redirección automática si ya hay sesión iniciada
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const userStr = localStorage.getItem("user");
+    const user = userStr && userStr !== "undefined" ? JSON.parse(userStr) : null;
+
+    if (token && user) {
+      switch (user.rol) {
+        case "ROL_ADMIN":
+          navigate("/admin", { replace: true });
+          break;
+        case "ROL_VENDEDOR":
+          navigate("/vendedor", { replace: true });
+          break;
+        default:
+          navigate("/usuario", { replace: true });
+          break;
+      }
+    }
+  }, [navigate]);
+
   // ✅ Llamada a la API
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await fetch("http://localhost:8008/api/productos"); // Ajusta el puerto si es distinto
+        const res = await fetch("http://localhost:8008/api/productos");
         if (!res.ok) throw new Error("Error al cargar productos");
         const data = await res.json();
         setProducts(data);
@@ -48,26 +72,31 @@ const ProductsPage: React.FC = () => {
 
   // ✅ Filtros
   const filtered = useMemo(() => {
-    let list = products.filter(p =>
+    let list = products.filter((p) =>
       p.nombre.toLowerCase().includes(search.toLowerCase())
     );
 
     if (category !== "Todos") {
-      list = list.filter(p => p.categoria === category);
+      list = list.filter((p) => p.categoria === category);
     }
 
     switch (sort) {
-      case "price-asc": list = [...list].sort((a, b) => a.precio - b.precio); break;
-      case "price-desc": list = [...list].sort((a, b) => b.precio - a.precio); break;
-      default: break; // relevance = sin ordenar
+      case "price-asc":
+        list = [...list].sort((a, b) => a.precio - b.precio);
+        break;
+      case "price-desc":
+        list = [...list].sort((a, b) => b.precio - a.precio);
+        break;
+      default:
+        break; // relevance = sin ordenar
     }
     return list;
   }, [search, category, sort, products]);
 
   // ✅ Agregar al carrito
   const addToCart = (product: Product) => {
-    setCart(prev => {
-      const idx = prev.findIndex(ci => ci.product.id === product.id);
+    setCart((prev) => {
+      const idx = prev.findIndex((ci) => ci.product.id === product.id);
       if (idx >= 0) {
         const copy = [...prev];
         copy[idx] = { ...copy[idx], qty: copy[idx].qty + 1 };
@@ -78,15 +107,15 @@ const ProductsPage: React.FC = () => {
   };
 
   const changeQty = (id: number, qty: number) => {
-    setCart(prev =>
+    setCart((prev) =>
       prev
-        .map(ci => (ci.product.id === id ? { ...ci, qty: Math.max(1, qty) } : ci))
-        .filter(ci => ci.qty > 0)
+        .map((ci) => (ci.product.id === id ? { ...ci, qty: Math.max(1, qty) } : ci))
+        .filter((ci) => ci.qty > 0)
     );
   };
 
   const removeItem = (id: number) => {
-    setCart(prev => prev.filter(ci => ci.product.id !== id));
+    setCart((prev) => prev.filter((ci) => ci.product.id !== id));
   };
 
   const total = cart.reduce((acc, it) => acc + it.product.precio * it.qty, 0);

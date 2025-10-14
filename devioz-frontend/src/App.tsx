@@ -15,7 +15,7 @@ import ChatButton from "./components/ChatButton";
 // Páginas
 import ProductsPage from "./pages/Products/ProductsPage";
 import ProductDetailPage from "./pages/Products/ProductDetailPage";
-import UserDashboard from "./pages/UserDashboard";
+import UserDashboard from "./pages/UserDashboard/UserDashboard";
 
 // Rutas protegidas
 import ProtectedRoute from "./routes/ProtectedRoute";
