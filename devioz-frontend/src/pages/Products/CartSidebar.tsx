@@ -1,15 +1,14 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Plus, Minus, Trash2 } from "lucide-react";
-import type { Product } from "./ProductCard";
+import { Trash2 } from "lucide-react";
+import { Product } from "./ProductCard";
 
-// ✅ Tipo del item del carrito
 export interface CartItem {
   product: Product;
   qty: number;
 }
 
-interface Props {
+interface CartSidebarProps {
   open: boolean;
   onClose: () => void;
   items: CartItem[];
@@ -19,88 +18,113 @@ interface Props {
   onCheckout: () => void;
 }
 
-const CartSidebar: React.FC<Props> = ({
+const CartSidebar: React.FC<CartSidebarProps> = ({
   open,
   onClose,
   items,
   onQtyChange,
   onRemove,
   total,
-  onCheckout
+  onCheckout,
 }) => {
   return (
     <AnimatePresence>
       {open && (
-        <>
-          <motion.div
-            className="fixed inset-0 bg-black/40 z-40"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-          />
-          <motion.aside
-            className="fixed right-0 top-0 h-full w-[360px] max-w-[90vw] bg-white z-50 shadow-2xl flex flex-col text-black"
-            initial={{ x: 420 }}
-            animate={{ x: 0 }}
-            exit={{ x: 420 }}
-            transition={{ type: "tween", duration: 0.25 }}
-          >
-            <div className="p-4 border-b flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Tu carrito</h2>
-              <button onClick={onClose} className="p-2 rounded hover:bg-gray-100">
-                <X size={20} />
-              </button>
-            </div>
+        <motion.div
+          initial={{ x: "100%" }}
+          animate={{ x: 0 }}
+          exit={{ x: "100%" }}
+          transition={{ type: "spring", stiffness: 260, damping: 25 }}
+          className="fixed right-0 top-0 w-80 sm:w-96 h-full bg-white shadow-xl z-50 flex flex-col"
+        >
+          {/* Cabecera */}
+          <div className="p-4 border-b flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-gray-800">
+              🛒 Tu carrito
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-800 text-xl"
+            >
+              ✕
+            </button>
+          </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {items.length === 0 && <p className="text-gray-500">Aún no agregaste productos.</p>}
-
-              {items.map(({ product, qty }) => (
-                <div key={product.id} className="flex gap-3 items-center">
-                  <img
-                    src={product.imagen}
-                    alt={product.nombre}
-                    className="w-16 h-16 object-cover rounded-lg border"
-                  />
-
-                  <div className="flex-1">
-                    <p className="font-medium">{product.nombre}</p>
-                    <p className="text-sm text-gray-600">${product.precio.toFixed(2)}</p>
-
-                    <div className="mt-2 inline-flex items-center gap-2">
-                      <button className="p-1 rounded border" onClick={() => onQtyChange(product.id, qty - 1)}>
-                        <Minus size={16} />
-                      </button>
-                      <span className="min-w-[2ch] text-center">{qty}</span>
-                      <button className="p-1 rounded border" onClick={() => onQtyChange(product.id, qty + 1)}>
-                        <Plus size={16} />
-                      </button>
+          {/* Lista de productos */}
+          <div className="flex-1 overflow-y-auto p-4">
+            {items.length === 0 ? (
+              <p className="text-gray-500 text-center mt-10">
+                No tienes productos en el carrito.
+              </p>
+            ) : (
+              items.map(({ product, qty }) => (
+                <div
+                  key={product.id}
+                  className="flex items-center justify-between border-b pb-3 mb-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={product.imagen || "/no-image.png"}
+                      alt={product.nombre}
+                      className="w-14 h-14 object-cover rounded-md border"
+                    />
+                    <div>
+                      <p className="font-medium text-gray-800 text-sm">
+                        {product.nombre}
+                      </p>
+                      {/* 🔹 Mostrar en soles */}
+                      <p className="text-teal-600 font-semibold text-sm">
+                        S/ {product.precio.toFixed(2)}
+                      </p>
                     </div>
                   </div>
 
-                  <button className="p-2 text-red-600 hover:bg-red-50 rounded" onClick={() => onRemove(product.id)}>
-                    <Trash2 size={18} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => onQtyChange(product.id, qty - 1)}
+                      className="px-2 py-1 border rounded hover:bg-gray-100"
+                    >
+                      −
+                    </button>
+                    <span className="min-w-[20px] text-center">{qty}</span>
+                    <button
+                      onClick={() => onQtyChange(product.id, qty + 1)}
+                      className="px-2 py-1 border rounded hover:bg-gray-100"
+                    >
+                      +
+                    </button>
+
+                    <button
+                      onClick={() => onRemove(product.id)}
+                      className="text-red-500 hover:text-red-600 ml-2"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
-              ))}
+              ))
+            )}
+          </div>
+
+          {/* Total y botón de compra */}
+          <div className="p-4 border-t">
+            <div className="flex justify-between mb-3">
+              <span className="text-gray-600 font-medium">Total</span>
+              {/* 🔹 Mostrar total en soles */}
+              <span className="text-lg font-bold text-gray-900">
+                S/ {total.toFixed(2)}
+              </span>
             </div>
 
-            <div className="p-4 border-t">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-gray-600">Total</span>
-                <span className="text-xl font-bold">${total.toFixed(2)}</span>
-              </div>
-
-              <button
-                onClick={onCheckout}
-                className="w-full bg-teal-600 text-white py-2 rounded-xl shadow hover:shadow-lg"
-              >
-                Finalizar compra
-              </button>
-            </div>
-          </motion.aside>
-        </>
+            <button
+              onClick={onCheckout}
+              disabled={items.length === 0}
+              className="w-full bg-teal-600 hover:bg-teal-500 text-white font-semibold py-2 rounded-lg transition"
+            >
+              Finalizar compra
+            </button>
+          </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );

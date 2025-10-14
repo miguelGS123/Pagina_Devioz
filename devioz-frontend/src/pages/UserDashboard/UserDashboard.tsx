@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
+import Swal from "sweetalert2";
 
 import { Product } from "../Products/ProductCard";
 import { CartItem } from "../Products/CartSidebar";
@@ -101,12 +102,61 @@ const UserDashboardPage: React.FC = () => {
         : prev.map((i) => (i.product.id === id ? { ...i, qty } : i))
     );
 
-  const handleCheckout = () => {
-    alert("✅ Compra realizada!");
-    setCartItems([]);
-    setTotal(0);
+  // --- 💳 Checkout / Comprar ---
+  const handleCheckout = async () => {
+    if (cartItems.length === 0) {
+      await Swal.fire("🛒 Tu carrito está vacío", "", "info");
+      return;
+    }
+
+    const confirmacion = await Swal.fire({
+      title: "¿Confirmar compra?",
+      text: "¿Deseas continuar con el pago de tus productos?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#0d9488",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Sí, comprar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (!confirmacion.isConfirmed) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token || !user) {
+        await Swal.fire("⚠️ Debes iniciar sesión", "", "warning");
+        return;
+      }
+
+      // Enviar cada producto del carrito al backend
+      for (const item of cartItems) {
+        await axios.post(
+          `http://localhost:8008/api/ventas?productoId=${item.product.id}&cantidad=${item.qty}`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      }
+
+      await Swal.fire(
+        "✅ Compra exitosa",
+        "Revisa tu correo para la confirmación de tu compra.",
+        "success"
+      );
+
+      setCartItems([]);
+      setTotal(0);
+      setCartOpen(false);
+    } catch (error: any) {
+      console.error("❌ Error al procesar la compra:", error);
+      const msg =
+        error.response?.data ||
+        "Error inesperado. Por favor, intenta nuevamente.";
+      await Swal.fire("❌ Error", msg, "error");
+    }
   };
 
+  // --- Calcular total ---
   useEffect(() => {
     setTotal(cartItems.reduce((a, b) => a + b.product.precio * b.qty, 0));
   }, [cartItems]);
