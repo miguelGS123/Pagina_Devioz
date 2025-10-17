@@ -34,40 +34,45 @@ public class ProductoController {
     public ResponseEntity<Producto> getProductoById(@PathVariable Long id) {
         Optional<Producto> producto = productoService.getProductoById(id);
         return producto.map(ResponseEntity::ok)
-                       .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // ✅ Crear nuevo producto (ACTUALIZADO - asigna usuario automáticamente)
+    // ✅ Crear nuevo producto (asigna automáticamente el usuario autenticado)
     @PostMapping
-    public ResponseEntity<Producto> createProducto(@RequestBody Producto producto, 
-                                                  Authentication authentication) {
-        
+    public ResponseEntity<Producto> createProducto(@RequestBody Producto producto,
+                                                   Authentication authentication) {
+
         // Obtener el email del usuario autenticado
         String email = authentication.getName();
-        
+
         // Buscar el usuario en la base de datos
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + email));
-        
+
         // Asignar el usuario autenticado como creador
         producto.setCreadoPor(usuario);
-        
+
         Producto savedProducto = productoService.saveProducto(producto);
         return ResponseEntity.ok(savedProducto);
     }
 
-    // ✅ Actualizar producto existente
+    // ✅ Actualizar producto existente (corrige problema del stock)
     @PutMapping("/{id}")
-    public ResponseEntity<Producto> updateProducto(@PathVariable Long id, @RequestBody Producto productoDetails) {
+    public ResponseEntity<Producto> updateProducto(@PathVariable Long id,
+                                                   @RequestBody Producto productoDetails) {
+
         Optional<Producto> producto = productoService.getProductoById(id);
 
         if (producto.isPresent()) {
             Producto existingProducto = producto.get();
+
             existingProducto.setNombre(productoDetails.getNombre());
             existingProducto.setDescripcion(productoDetails.getDescripcion());
             existingProducto.setImagen(productoDetails.getImagen());
             existingProducto.setPrecio(productoDetails.getPrecio());
-            // No actualizar creadoPor - se mantiene el original
+            existingProducto.setStock(productoDetails.getStock()); // ✅ Actualiza stock
+            existingProducto.setCategoria(productoDetails.getCategoria()); // ✅ Actualiza categoría
+            // ❌ No actualizamos creadoPor — se mantiene el creador original
 
             Producto updatedProducto = productoService.saveProducto(existingProducto);
             return ResponseEntity.ok(updatedProducto);

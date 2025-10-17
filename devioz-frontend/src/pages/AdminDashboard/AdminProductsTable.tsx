@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import axios from "axios";
+import api from "../../api/axiosConfig";
 import Swal from "sweetalert2";
-
+import { AxiosResponse } from "axios"; // 👈 agrega arriba del archivo
 interface Producto {
   id: number;
   nombre: string;
@@ -19,61 +19,77 @@ interface Props {
 const AdminProductsTable: React.FC<Props> = ({ productos }) => {
   const [items, setItems] = useState(productos);
   const [editing, setEditing] = useState<Producto | null>(null);
-  
+  const [loading, setLoading] = useState(false);
 
-  const token = localStorage.getItem("token");
-
+  // ✅ Eliminar producto
   const handleDelete = async (id: number) => {
     const confirm = await Swal.fire({
       title: "¿Eliminar producto?",
-      text: "Esta acción no se puede deshacer",
+      text: "Esta acción no se puede deshacer.",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
-      confirmButtonText: "Eliminar",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar",
       cancelButtonText: "Cancelar",
     });
 
     if (!confirm.isConfirmed) return;
 
     try {
-      await axios.delete(`http://localhost:8008/api/productos/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setItems(items.filter((p) => p.id !== id));
-      Swal.fire("Eliminado", "El producto fue eliminado", "success");
-    } catch (err) {
-      Swal.fire("Error", "No se pudo eliminar el producto", "error");
+      setLoading(true);
+      await api.delete(`/productos/${id}`);
+      setItems((prev) => prev.filter((p) => p.id !== id));
+      Swal.fire("Eliminado", "El producto fue eliminado correctamente.", "success");
+    } catch (error: any) {
+      console.error("❌ Error al eliminar producto:", error);
+      Swal.fire("Error", "No se pudo eliminar el producto.", "error");
+    } finally {
+      setLoading(false);
     }
   };
 
+  // ✅ Crear o actualizar producto
   const handleSave = async (prod: Producto) => {
     try {
-      if (prod.id) {
-        await axios.put(
-          `http://localhost:8008/api/productos/${prod.id}`,
-          prod,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setItems(items.map((i) => (i.id === prod.id ? prod : i)));
-        Swal.fire("Actualizado", "El producto fue actualizado", "success");
-      } else {
-        const res = await axios.post(
-          `http://localhost:8008/api/productos`,
-          prod,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setItems([...items, res.data]);
-        Swal.fire("Creado", "El producto fue agregado", "success");
+      if (!prod.nombre || prod.precio <= 0 || prod.stock < 0) {
+        Swal.fire("⚠️ Campos inválidos", "Verifica los datos ingresados.", "warning");
+        return;
       }
+
+      setLoading(true);
+      let response: AxiosResponse<Producto>;
+
+      if (prod.id && prod.id !== 0) {
+        // 🔹 Actualizar producto existente
+        response = await api.put(`/productos/${prod.id}`, prod);
+        setItems((prev) => prev.map((p) => (p.id === prod.id ? response.data : p)));
+        Swal.fire("Actualizado", "El producto fue actualizado correctamente.", "success");
+      } else {
+        // 🔹 Crear nuevo producto
+        response = await api.post(`/productos`, prod);
+        setItems((prev) => [...prev, response.data]);
+        Swal.fire("Creado", "El producto fue agregado correctamente.", "success");
+      }
+
       setEditing(null);
-      
-    } catch (err) {
-      Swal.fire("Error", "No se pudo guardar el producto", "error");
+    } catch (error: any) {
+      console.error("❌ Error al guardar producto:", error);
+
+      // Manejo de error más informativo
+      const message =
+        error.response?.status === 403
+          ? "Acceso denegado. Tu rol no tiene permisos para esta acción."
+          : error.response?.data?.message || "Error al guardar el producto.";
+
+      Swal.fire("Error", message, "error");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleEdit = (p: Producto) => setEditing(p);
+  const handleEdit = (producto: Producto) => setEditing(producto);
+
   const handleNew = () =>
     setEditing({
       id: 0,
@@ -86,19 +102,26 @@ const AdminProductsTable: React.FC<Props> = ({ productos }) => {
     });
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 relative">
+      {loading && (
+        <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center z-50">
+          <div className="text-gray-700 font-semibold animate-pulse">Procesando...</div>
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-teal-600">
           🛍️ Gestión de Productos
         </h2>
         <button
           onClick={handleNew}
-          className="bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 rounded-lg"
+          className="bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 rounded-lg shadow"
         >
           + Nuevo producto
         </button>
       </div>
 
+      {/* Tabla de productos */}
       <table className="min-w-full text-sm text-gray-700 border-collapse">
         <thead>
           <tr className="bg-gray-100 text-left">
@@ -111,12 +134,12 @@ const AdminProductsTable: React.FC<Props> = ({ productos }) => {
         </thead>
         <tbody>
           {items.map((p) => (
-            <tr key={p.id} className="border-b hover:bg-gray-50">
-              <td className="p-2">{p.nombre}</td>
-              <td className="p-2">S/ {p.precio}</td>
+            <tr key={p.id} className="border-b hover:bg-gray-50 transition">
+              <td className="p-2 font-medium">{p.nombre}</td>
+              <td className="p-2">S/ {p.precio.toFixed(2)}</td>
               <td className="p-2">{p.stock}</td>
               <td className="p-2">{p.categoria || "—"}</td>
-              <td className="p-2 text-center flex justify-center gap-2">
+              <td className="p-2 text-center flex justify-center gap-3">
                 <button
                   onClick={() => handleEdit(p)}
                   className="text-blue-600 hover:underline"
@@ -135,26 +158,27 @@ const AdminProductsTable: React.FC<Props> = ({ productos }) => {
         </tbody>
       </table>
 
-      {/* Modal de edición / creación */}
+      {/* Modal de creación / edición */}
       {editing && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 w-96 shadow-xl">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 shadow-2xl">
             <h3 className="text-lg font-semibold mb-4 text-teal-600">
-              {editing.id ? "Editar producto" : "Nuevo producto"}
+              {editing.id && editing.id !== 0 ? "Editar producto" : "Nuevo producto"}
             </h3>
 
-            {["nombre", "descripcion", "categoria", "imagen"].map((f) => (
+            {["nombre", "descripcion", "categoria", "imagen"].map((campo) => (
               <input
-                key={f}
+                key={campo}
                 type="text"
-                placeholder={f.charAt(0).toUpperCase() + f.slice(1)}
-                value={(editing as any)[f]}
+                placeholder={campo.charAt(0).toUpperCase() + campo.slice(1)}
+                value={(editing as any)[campo]}
                 onChange={(e) =>
-                  setEditing({ ...editing, [f]: e.target.value })
+                  setEditing({ ...editing, [campo]: e.target.value })
                 }
-                className="w-full border px-3 py-2 mb-3 rounded"
+                className="w-full border border-gray-300 px-3 py-2 mb-3 rounded focus:ring-2 focus:ring-teal-500"
               />
             ))}
+
             <input
               type="number"
               placeholder="Precio"
@@ -162,8 +186,9 @@ const AdminProductsTable: React.FC<Props> = ({ productos }) => {
               onChange={(e) =>
                 setEditing({ ...editing, precio: parseFloat(e.target.value) })
               }
-              className="w-full border px-3 py-2 mb-3 rounded"
+              className="w-full border border-gray-300 px-3 py-2 mb-3 rounded focus:ring-2 focus:ring-teal-500"
             />
+
             <input
               type="number"
               placeholder="Stock"
@@ -171,10 +196,10 @@ const AdminProductsTable: React.FC<Props> = ({ productos }) => {
               onChange={(e) =>
                 setEditing({ ...editing, stock: parseInt(e.target.value) })
               }
-              className="w-full border px-3 py-2 mb-4 rounded"
+              className="w-full border border-gray-300 px-3 py-2 mb-4 rounded focus:ring-2 focus:ring-teal-500"
             />
 
-            <div className="flex justify-between">
+            <div className="flex justify-between mt-2">
               <button
                 onClick={() => setEditing(null)}
                 className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded"
