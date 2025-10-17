@@ -7,13 +7,10 @@ import LoginModal from "./LoginModal";
 interface Props {
   itemsCount: number;
   onCartClick: () => void;
-
   search: string;
   onSearchChange: (v: string) => void;
-
   category: string;
   onCategoryChange: (v: string) => void;
-
   sort: string;
   onSortChange: (v: string) => void;
 }
@@ -32,7 +29,7 @@ const ProductsHeader: React.FC<Props> = ({
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
 
-  // Cargar usuario desde localStorage
+  // 🔹 Cargar usuario desde localStorage
   const loadUser = () => {
     try {
       const storedUser = localStorage.getItem("user");
@@ -50,7 +47,7 @@ const ProductsHeader: React.FC<Props> = ({
   useEffect(() => {
     loadUser();
 
-    // Escuchar cambios en localStorage (ej: login/logout desde LoginModal)
+    // Escuchar cambios en localStorage (login/logout desde LoginModal)
     const handleStorageChange = () => loadUser();
     window.addEventListener("storage", handleStorageChange);
 
@@ -59,28 +56,30 @@ const ProductsHeader: React.FC<Props> = ({
     };
   }, []);
 
+  // 🔹 Cerrar sesión
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
     navigate("/productos");
-    // Notificar cambios
     window.dispatchEvent(new Event("storage"));
   };
 
   return (
     <div className="bg-white border-b text-gray-900">
       <div className="max-w-7xl mx-auto px-6 py-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        {/* 🏷️ Título */}
         <motion.h1
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-2xl md:text-3xl font-bold text-gray-900"
         >
-          Productos Devíoz
+          Productos Devióz
         </motion.h1>
 
+        {/* 🔍 Filtros y acciones */}
         <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
-          {/* Input de búsqueda */}
+          {/* Buscador */}
           <input
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -115,7 +114,7 @@ const ProductsHeader: React.FC<Props> = ({
             <option value="rating">Mejor valorados</option>
           </select>
 
-          {/* Login / Usuario */}
+          {/* 👤 Usuario o login */}
           {!user ? (
             <button
               onClick={() => setLoginOpen(true)}
@@ -130,9 +129,10 @@ const ProductsHeader: React.FC<Props> = ({
                 <User size={18} />
                 {user?.nombre || user?.name || "Usuario"}
               </button>
+              {/* Menú desplegable */}
               <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow-md hidden group-hover:block z-50">
                 <button
-                  onClick={() => navigate("/usuario")} // 🔹 Corregido: va al perfil de usuario
+                  onClick={() => navigate("/usuario")}
                   className="block w-full px-4 py-2 text-left hover:bg-gray-100"
                 >
                   Ir a mi perfil
@@ -147,7 +147,7 @@ const ProductsHeader: React.FC<Props> = ({
             </div>
           )}
 
-          {/* Carrito */}
+          {/* 🛒 Carrito */}
           <button
             onClick={onCartClick}
             className="relative inline-flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-xl shadow-md hover:shadow-lg transition"
@@ -163,6 +163,7 @@ const ProductsHeader: React.FC<Props> = ({
         </div>
       </div>
 
+      {/* 🔒 Modal de login */}
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
     </div>
   );

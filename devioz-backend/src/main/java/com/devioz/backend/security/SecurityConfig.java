@@ -6,6 +6,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.core.GrantedAuthorityDefaults;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -58,16 +59,18 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // 🔑 Habilita CORS antes que CSRF
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Rutas públicas
+                // 🔓 Rutas públicas
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/api/formulario/**").permitAll()
                 .requestMatchers("/api/chat/**").permitAll()
                 .requestMatchers("/api/hello").permitAll()
+
+                // 🟢 NUEVO: permitir acceso público a las imágenes subidas
+                .requestMatchers("/uploads/**").permitAll()
 
                 // Productos
                 .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
@@ -85,6 +88,9 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+        // ✅ IMPORTANTE: Desactivar prefijo automático "ROLE_"
+        http.setSharedObject(GrantedAuthorityDefaults.class, new GrantedAuthorityDefaults(""));
 
         return http.build();
     }

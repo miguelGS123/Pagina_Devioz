@@ -19,7 +19,28 @@ interface Props {
 }
 
 const ProductCard: React.FC<Props> = ({ product, onAddToCart }) => {
-  const [imgSrc, setImgSrc] = useState(product.imagen || "/logo-devioz.png");
+  const [fallback, setFallback] = useState("/logo-devioz.png");
+
+  // ✅ Determinar correctamente la ruta de imagen
+  const getImageUrl = () => {
+    if (!product.imagen) return fallback;
+
+    // Si ya es una URL completa (ej: http o https)
+    if (product.imagen.startsWith("http")) return product.imagen;
+
+    // Si viene del backend (/uploads/)
+    if (product.imagen.startsWith("/uploads/"))
+      return `http://localhost:8008${product.imagen}`;
+
+    // Si viene del public del frontend (/productos/)
+    if (product.imagen.startsWith("/productos/"))
+      return product.imagen;
+
+    // Cualquier otro caso
+    return fallback;
+  };
+
+  const imgSrc = getImageUrl();
 
   const nombre = product.nombre ?? "Producto sin nombre";
   const categoria = product.categoria ?? "General";
@@ -37,7 +58,7 @@ const ProductCard: React.FC<Props> = ({ product, onAddToCart }) => {
             src={imgSrc}
             alt={nombre}
             className="w-full h-full object-contain"
-            onError={() => setImgSrc("/logo-devioz.png")}
+            onError={() => setFallback("/logo-devioz.png")}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
         </div>

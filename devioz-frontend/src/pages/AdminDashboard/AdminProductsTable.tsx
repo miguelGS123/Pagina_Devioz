@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import api from "../../api/axiosConfig";
 import Swal from "sweetalert2";
-import { AxiosResponse } from "axios"; // 👈 agrega arriba del archivo
+import { AxiosResponse } from "axios";
+
 interface Producto {
-  id: number;
+  id?: number;
   nombre: string;
   descripcion: string;
   precio: number;
@@ -21,7 +22,7 @@ const AdminProductsTable: React.FC<Props> = ({ productos }) => {
   const [editing, setEditing] = useState<Producto | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // ✅ Eliminar producto
+  // 🗑️ Eliminar producto
   const handleDelete = async (id: number) => {
     const confirm = await Swal.fire({
       title: "¿Eliminar producto?",
@@ -49,7 +50,7 @@ const AdminProductsTable: React.FC<Props> = ({ productos }) => {
     }
   };
 
-  // ✅ Crear o actualizar producto
+  // 💾 Crear o actualizar producto
   const handleSave = async (prod: Producto) => {
     try {
       if (!prod.nombre || prod.precio <= 0 || prod.stock < 0) {
@@ -60,28 +61,24 @@ const AdminProductsTable: React.FC<Props> = ({ productos }) => {
       setLoading(true);
       let response: AxiosResponse<Producto>;
 
-      if (prod.id && prod.id !== 0) {
-        // 🔹 Actualizar producto existente
+      if (prod.id) {
         response = await api.put(`/productos/${prod.id}`, prod);
         setItems((prev) => prev.map((p) => (p.id === prod.id ? response.data : p)));
-        Swal.fire("Actualizado", "El producto fue actualizado correctamente.", "success");
+        Swal.fire("✅ Actualizado", "El producto fue actualizado correctamente.", "success");
       } else {
-        // 🔹 Crear nuevo producto
-        response = await api.post(`/productos`, prod);
+        const { id, ...nuevoProducto } = prod;
+        response = await api.post(`/productos`, nuevoProducto);
         setItems((prev) => [...prev, response.data]);
-        Swal.fire("Creado", "El producto fue agregado correctamente.", "success");
+        Swal.fire("✅ Creado", "El producto fue agregado correctamente.", "success");
       }
 
       setEditing(null);
     } catch (error: any) {
       console.error("❌ Error al guardar producto:", error);
-
-      // Manejo de error más informativo
       const message =
         error.response?.status === 403
           ? "Acceso denegado. Tu rol no tiene permisos para esta acción."
           : error.response?.data?.message || "Error al guardar el producto.";
-
       Swal.fire("Error", message, "error");
     } finally {
       setLoading(false);
@@ -92,7 +89,6 @@ const AdminProductsTable: React.FC<Props> = ({ productos }) => {
 
   const handleNew = () =>
     setEditing({
-      id: 0,
       nombre: "",
       descripcion: "",
       precio: 0,
@@ -105,7 +101,9 @@ const AdminProductsTable: React.FC<Props> = ({ productos }) => {
     <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 relative">
       {loading && (
         <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center z-50">
-          <div className="text-gray-700 font-semibold animate-pulse">Procesando...</div>
+          <div className="text-gray-700 font-semibold animate-pulse">
+            Procesando...
+          </div>
         </div>
       )}
 
@@ -115,7 +113,7 @@ const AdminProductsTable: React.FC<Props> = ({ productos }) => {
         </h2>
         <button
           onClick={handleNew}
-          className="bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 rounded-lg shadow"
+          className="bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 rounded-lg shadow transition"
         >
           + Nuevo producto
         </button>
@@ -147,7 +145,7 @@ const AdminProductsTable: React.FC<Props> = ({ productos }) => {
                   Editar
                 </button>
                 <button
-                  onClick={() => handleDelete(p.id)}
+                  onClick={() => handleDelete(p.id!)}
                   className="text-red-600 hover:underline"
                 >
                   Eliminar
@@ -163,38 +161,93 @@ const AdminProductsTable: React.FC<Props> = ({ productos }) => {
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-96 shadow-2xl">
             <h3 className="text-lg font-semibold mb-4 text-teal-600">
-              {editing.id && editing.id !== 0 ? "Editar producto" : "Nuevo producto"}
+              {editing.id ? "Editar producto" : "Nuevo producto"}
             </h3>
 
-            {["nombre", "descripcion", "categoria", "imagen"].map((campo) => (
-              <input
-                key={campo}
-                type="text"
-                placeholder={campo.charAt(0).toUpperCase() + campo.slice(1)}
-                value={(editing as any)[campo]}
-                onChange={(e) =>
-                  setEditing({ ...editing, [campo]: e.target.value })
-                }
-                className="w-full border border-gray-300 px-3 py-2 mb-3 rounded focus:ring-2 focus:ring-teal-500"
-              />
-            ))}
+            {/* Nombre */}
+            <input
+              type="text"
+              placeholder="Nombre"
+              value={editing.nombre}
+              onChange={(e) => setEditing({ ...editing, nombre: e.target.value })}
+              className="w-full border border-gray-300 px-3 py-2 mb-3 rounded focus:ring-2 focus:ring-teal-500"
+            />
 
+            {/* Descripción */}
+            <textarea
+              placeholder="Descripción"
+              value={editing.descripcion}
+              onChange={(e) =>
+                setEditing({ ...editing, descripcion: e.target.value })
+              }
+              className="w-full border border-gray-300 px-3 py-2 mb-3 rounded focus:ring-2 focus:ring-teal-500"
+            />
+
+            {/* Categoría */}
+            <select
+              value={editing.categoria || ""}
+              onChange={(e) =>
+                setEditing({ ...editing, categoria: e.target.value })
+              }
+              className="w-full border border-gray-300 px-3 py-2 mb-3 rounded focus:ring-2 focus:ring-teal-500 bg-white"
+            >
+              <option value="">Selecciona una categoría</option>
+              <option value="Laptops">Laptops</option>
+              <option value="Celulares">Celulares</option>
+              <option value="Accesorios">Accesorios</option>
+              <option value="Audio">Audio</option>
+              <option value="Periféricos">Periféricos</option>
+              <option value="Otros">Otros</option>
+            </select>
+
+            {/* Imagen */}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append("file", file);
+
+                try {
+                  const res = await api.post("/productos/upload", formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                  });
+                  setEditing({ ...editing, imagen: res.data });
+                  Swal.fire("✅ Imagen subida", "La imagen fue cargada correctamente", "success");
+                } catch {
+                  Swal.fire("❌ Error", "No se pudo subir la imagen", "error");
+                }
+              }}
+              className="w-full border border-gray-300 px-3 py-2 mb-3 rounded focus:ring-2 focus:ring-teal-500"
+            />
+
+            {/* Precio */}
             <input
               type="number"
               placeholder="Precio"
               value={editing.precio}
               onChange={(e) =>
-                setEditing({ ...editing, precio: parseFloat(e.target.value) })
+                setEditing({
+                  ...editing,
+                  precio: parseFloat(e.target.value) || 0,
+                })
               }
               className="w-full border border-gray-300 px-3 py-2 mb-3 rounded focus:ring-2 focus:ring-teal-500"
             />
 
+            {/* Stock */}
             <input
               type="number"
               placeholder="Stock"
               value={editing.stock}
               onChange={(e) =>
-                setEditing({ ...editing, stock: parseInt(e.target.value) })
+                setEditing({
+                  ...editing,
+                  stock: parseInt(e.target.value) || 0,
+                })
               }
               className="w-full border border-gray-300 px-3 py-2 mb-4 rounded focus:ring-2 focus:ring-teal-500"
             />
