@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { motion } from "framer-motion";
+// import { motion } from "framer-motion"; // ✅ CAMBIO: Ya no lo necesitamos aquí
 import Swal from "sweetalert2";
 
 import { Product } from "../Products/ProductCard";
@@ -12,6 +12,7 @@ import DashboardHeader from "./DashboardHeader";
 import DashboardFilters from "./DashboardFilters";
 import DashboardProducts from "./DashboardProducts";
 import UserProfileModal from "./UserProfileModal";
+import UserHistoryModal from "./UserHistoryModal"; // ✅ CAMBIO: Importamos el nuevo modal
 
 interface Usuario {
   id: number;
@@ -21,7 +22,8 @@ interface Usuario {
   rol: string;
 }
 
-interface Venta {
+// ✅ CAMBIO: Exportamos la interfaz Venta para usarla en el Modal
+export interface Venta {
   id: number;
   producto: Product;
   cantidad: number;
@@ -67,7 +69,9 @@ const UserDashboardPage: React.FC = () => {
         );
         setUser(userRes.data);
 
-        const productosRes = await axios.get("http://localhost:8008/api/productos");
+        const productosRes = await axios.get(
+          "http://localhost:8008/api/productos"
+        );
         setProductos(productosRes.data);
 
         const ventasRes = await axios.get(
@@ -171,7 +175,8 @@ const UserDashboardPage: React.FC = () => {
     let list = productos.filter((p) =>
       p.nombre.toLowerCase().includes(search.toLowerCase())
     );
-    if (categoria !== "Todos") list = list.filter((p) => p.categoria === categoria);
+    if (categoria !== "Todos")
+      list = list.filter((p) => p.categoria === categoria);
     if (orden === "precio-asc") list.sort((a, b) => a.precio - b.precio);
     if (orden === "precio-desc") list.sort((a, b) => b.precio - a.precio);
     return list;
@@ -186,7 +191,8 @@ const UserDashboardPage: React.FC = () => {
         cartItems={cartItems}
         onCartClick={() => setCartOpen(true)}
         onPerfilClick={() => setPerfilOpen(true)}
-        onHistorialClick={() => setHistorialOpen((p) => !p)}
+        // ✅ CAMBIO: Hacemos que el botón "abra" el modal, no que haga "toggle"
+        onHistorialClick={() => setHistorialOpen(true)}
         onLogout={handleLogout}
         menuOpen={menuOpen}
         setMenuOpen={setMenuOpen}
@@ -204,42 +210,7 @@ const UserDashboardPage: React.FC = () => {
       {/* 🧱 Productos */}
       <DashboardProducts productos={filtered} onAddToCart={handleAddToCart} />
 
-      {/* 🧾 Historial de compras */}
-      {historialOpen && (
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-7xl mx-auto bg-white rounded-xl shadow-md p-6 mt-6"
-        >
-          <h2 className="text-xl font-semibold text-teal-600 mb-4">
-            🧾 Historial de Compras
-          </h2>
-          {ventas.length === 0 ? (
-            <p className="text-gray-600">No tienes compras aún.</p>
-          ) : (
-            <table className="min-w-full text-sm text-gray-700">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="p-2">Producto</th>
-                  <th className="p-2">Cantidad</th>
-                  <th className="p-2">Fecha</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ventas.map((v, i) => (
-                  <tr key={i} className="border-b">
-                    <td className="p-2">{v.producto.nombre}</td>
-                    <td className="p-2">{v.cantidad}</td>
-                    <td className="p-2">
-                      {new Date(v.fecha).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </motion.section>
-      )}
+      {/* ✅ CAMBIO: Eliminamos la sección de historial de aquí */}
 
       {/* 🛒 Sidebar Carrito */}
       <CartSidebar
@@ -260,6 +231,14 @@ const UserDashboardPage: React.FC = () => {
           user={user}
           setUser={setUser}
           onClose={() => setPerfilOpen(false)}
+        />
+      )}
+
+      {/* ✅ CAMBIO: Añadimos el nuevo modal de Historial aquí */}
+      {historialOpen && (
+        <UserHistoryModal
+          ventas={ventas}
+          onClose={() => setHistorialOpen(false)}
         />
       )}
     </div>

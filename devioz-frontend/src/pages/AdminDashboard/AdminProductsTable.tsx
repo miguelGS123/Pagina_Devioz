@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // 1. Importar useEffect
 import api from "../../api/axiosConfig";
 import Swal from "sweetalert2";
 import { AxiosResponse } from "axios";
@@ -21,6 +21,14 @@ const AdminProductsTable: React.FC<Props> = ({ productos }) => {
   const [items, setItems] = useState(productos);
   const [editing, setEditing] = useState<Producto | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // 2. AÑADIDO: Sincronizador de estado
+  // Si los 'productos' (que vienen del componente padre) cambian,
+  // este 'useEffect' fuerza la actualización del estado local 'items'.
+  // Esto soluciona que los datos se vean viejos al navegar.
+  useEffect(() => {
+    setItems(productos);
+  }, [productos]);
 
   // 🗑️ Eliminar producto
   const handleDelete = async (id: number) => {
