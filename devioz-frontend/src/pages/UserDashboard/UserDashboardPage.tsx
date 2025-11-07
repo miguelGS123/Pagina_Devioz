@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { motion } from "framer-motion";
+// import { motion } from "framer-motion"; // ✅ CAMBIO: Ya no lo necesitamos aquí
 import Swal from "sweetalert2";
 
 // Importaciones
@@ -12,7 +12,6 @@ import DashboardHeader from "./DashboardHeader";
 import DashboardFilters from "./DashboardFilters";
 import DashboardProducts from "./DashboardProducts";
 import UserProfileModal from "./UserProfileModal";
-import HistorialModal from "./HistorialModal"; // <-- Importa el nuevo modal
 
 interface Usuario {
   id: number;
@@ -22,7 +21,8 @@ interface Usuario {
   rol: string;
 }
 
-interface Venta {
+// ✅ CAMBIO: Exportamos la interfaz Venta para usarla en el Modal
+export interface Venta {
   id: number;
   producto: Product;
   cantidad: number;
@@ -186,28 +186,60 @@ const UserDashboardPage: React.FC = () => {
         isHistorialOpen={historialOpen}
         onCartClick={() => setCartOpen(true)}
         onPerfilClick={() => setPerfilOpen(true)}
-        onHistorialClick={() => setHistorialOpen(true)} // <-- ABRE EL MODAL
+        onHistorialClick={() => setHistorialOpen((p) => !p)}
         onLogout={handleLogout}
         menuOpen={menuOpen}
         setMenuOpen={setMenuOpen}
       />
 
-      {/* MUESTRA SIEMPRE LOS PRODUCTOS Y FILTROS */}
-      <motion.div
-        key="productos"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
-        <DashboardFilters
-          search={search}
-          categoria={categoria}
-          orden={orden}
-          setSearch={setSearch}
-          setCategoria={setCategoria}
-          setOrden={setOrden}
-        />
-        <DashboardProducts productos={filtered} onAddToCart={handleAddToCart} />
-      </motion.div>
+      <DashboardFilters
+        search={search}
+        categoria={categoria}
+        orden={orden}
+        setSearch={setSearch}
+        setCategoria={setCategoria}
+        setOrden={setOrden}
+      />
+
+      {/* 🧱 Productos */}
+      <DashboardProducts productos={filtered} onAddToCart={handleAddToCart} />
+
+      {/* 🧾 Historial de compras */}
+      {historialOpen && (
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-7xl mx-auto bg-white rounded-xl shadow-md p-6 mt-6"
+        >
+          <h2 className="text-xl font-semibold text-teal-600 mb-4">
+            🧾 Historial de Compras
+          </h2>
+          {ventas.length === 0 ? (
+            <p className="text-gray-600">No tienes compras aún.</p>
+          ) : (
+            <table className="min-w-full text-sm text-gray-700">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="p-2">Producto</th>
+                  <th className="p-2">Cantidad</th>
+                  <th className="p-2">Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ventas.map((v, i) => (
+                  <tr key={i} className="border-b">
+                    <td className="p-2">{v.producto.nombre}</td>
+                    <td className="p-2">{v.cantidad}</td>
+                    <td className="p-2">
+                      {new Date(v.fecha).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </motion.section>
+      )}
 
       {/* 🛒 Sidebar Carrito */}
       <CartSidebar
@@ -228,14 +260,6 @@ const UserDashboardPage: React.FC = () => {
           user={user}
           setUser={setUser}
           onClose={() => setPerfilOpen(false)}
-        />
-      )}
-
-      {/* 🧾 MODAL DE HISTORIAL (EN LUGAR DE LA SECCIÓN DE ABAJO) */}
-      {historialOpen && (
-        <HistorialModal
-          ventas={ventas}
-          onClose={() => setHistorialOpen(false)}
         />
       )}
     </div>

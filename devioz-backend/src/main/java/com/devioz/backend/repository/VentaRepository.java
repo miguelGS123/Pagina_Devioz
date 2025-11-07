@@ -9,33 +9,28 @@ import java.util.List;
 
 public interface VentaRepository extends JpaRepository<Venta, Long> {
 
-    // --- MÉTODOS ORIGINALES ---
-    // Los dejamos por si los usas para lógicas que no requieran DTOs
-    List<Venta> findByUsuarioId(Long usuarioId);
-    List<Venta> findByUsuarioEmail(String email);
+ // --- MÉTODOS ORIGINALES ---
+// Renombrados para que Spring Data JPA ordene automáticamente
+List<Venta> findByUsuarioIdOrderByFechaDesc(Long usuarioId);
+List<Venta> findByUsuarioEmailOrderByFechaDesc(String email);
 
 
-    // --- MÉTODOS OPTIMIZADOS (SOLUCIÓN N+1) ---
-    
-    /**
-     * Trae TODAS las ventas, incluyendo sus relaciones 'usuario' y 'producto' 
-     * en una sola consulta para evitar N+1.
-     * Usa LEFT JOIN para incluir ventas incluso si el usuario o producto son nulos.
-     */
-    @Query("SELECT v FROM Venta v LEFT JOIN FETCH v.usuario u LEFT JOIN FETCH v.producto p")
-    List<Venta> findAllWithDetails();
+// --- MÉTODOS OPTIMIZADOS (SOLUCIÓN N+1) --
+ /**
+     * Trae TODAS las ventas (para el Admin), ordenadas por fecha descendente.
+     */
+ @Query("SELECT v FROM Venta v LEFT JOIN FETCH v.usuario u LEFT JOIN FETCH v.producto p ORDER BY v.fecha DESC")
+ List<Venta> findAllWithDetails();
 
-    /**
-     * Trae las ventas de un USUARIO ID, incluyendo sus relaciones 'producto'
-     * en una sola consulta para evitar N+1.
-     */
-    @Query("SELECT v FROM Venta v LEFT JOIN FETCH v.usuario u LEFT JOIN FETCH v.producto p WHERE u.id = :usuarioId")
-    List<Venta> findByUsuarioIdWithDetails(@Param("usuarioId") Long usuarioId);
+/**
+     * Trae las ventas de un USUARIO ID (para el historial), ordenadas por fecha descendente.
+     */
+ @Query("SELECT v FROM Venta v LEFT JOIN FETCH v.usuario u LEFT JOIN FETCH v.producto p WHERE u.id = :usuarioId ORDER BY v.fecha DESC")
+List<Venta> findByUsuarioIdWithDetails(@Param("usuarioId") Long usuarioId);
 
-    /**
-     * Trae las ventas de un USUARIO EMAIL, incluyendo sus relaciones 'producto'
-     * en una sola consulta para evitar N+1.
-     */
-    @Query("SELECT v FROM Venta v LEFT JOIN FETCH v.usuario u LEFT JOIN FETCH v.producto p WHERE u.email = :email")
-    List<Venta> findByUsuarioEmailWithDetails(@Param("email") String email);
+/**
+     * Trae las ventas de un USUARIO EMAIL, ordenadas por fecha descendente.
+     */
+@Query("SELECT v FROM Venta v LEFT JOIN FETCH v.usuario u LEFT JOIN FETCH v.producto p WHERE u.email = :email ORDER BY v.fecha DESC")
+List<Venta> findByUsuarioEmailWithDetails(@Param("email") String email);
 }
