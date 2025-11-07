@@ -15,9 +15,10 @@ import ChatButton from "./components/ChatButton";
 // Páginas
 import ProductsPage from "./pages/Products/ProductsPage";
 import ProductDetailPage from "./pages/Products/ProductDetailPage";
-import UserDashboard from "./pages/UserDashboard/UserDashboard";
-import AdminDashboard from "./pages/AdminDashboard/AdminDashboard";  // ✅
-import VendorDashboard from "./pages/VendedorDashboard/VendedorDashboard"; // ✅
+import AdminDashboard from "./pages/AdminDashboard/AdminDashboard";
+import VendorDashboard from "./pages/VendedorDashboard/VendedorDashboard";
+// --- ESTE ES EL CAMBIO CLAVE ---
+import UserDashboardPage from "./pages/UserDashboard/UserDashboardPage"; // <-- Importamos el que tiene "Page"
 
 // Rutas protegidas
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -55,13 +56,14 @@ function App() {
           path="/usuario"
           element={
             <ProtectedRoute role="ROL_USUARIO">
-              <UserDashboard />
+              {/* --- USAMOS EL COMPONENTE CORRECTO --- */}
+              <UserDashboardPage />
             </ProtectedRoute>
           }
         />
 
         <Route
-          path="/admin/dashboard"
+          path="/admin"
           element={
             <ProtectedRoute role="ROL_ADMIN">
               <AdminDashboard />
@@ -70,7 +72,7 @@ function App() {
         />
 
         <Route
-          path="/vendedor/dashboard"
+          path="/vendedor"
           element={
             <ProtectedRoute role="ROL_VENDEDOR">
               <VendorDashboard />

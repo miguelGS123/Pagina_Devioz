@@ -52,13 +52,13 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
 
         onClose();
 
-        // ✅ Redirigir según el rol del usuario
+        // ✅ Redirigir según el rol del usuario (CORREGIDO)
         switch (data.usuario.rol) {
           case "ROL_ADMIN":
-            navigate("/admin/dashboard");
+            navigate("/admin"); // <--- CORREGIDO
             break;
           case "ROL_VENDEDOR":
-            navigate("/vendedor/dashboard");
+            navigate("/vendedor"); // <--- CORREGIDO
             break;
           default:
             navigate("/usuario");

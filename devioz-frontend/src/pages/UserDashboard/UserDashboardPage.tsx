@@ -4,14 +4,15 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import Swal from "sweetalert2";
 
+// Importaciones
 import { Product } from "../Products/ProductCard";
 import { CartItem } from "../Products/CartSidebar";
 import CartSidebar from "../Products/CartSidebar";
-
 import DashboardHeader from "./DashboardHeader";
 import DashboardFilters from "./DashboardFilters";
 import DashboardProducts from "./DashboardProducts";
 import UserProfileModal from "./UserProfileModal";
+import HistorialModal from "./HistorialModal"; // <-- Importa el nuevo modal
 
 interface Usuario {
   id: number;
@@ -38,7 +39,7 @@ const UserDashboardPage: React.FC = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [perfilOpen, setPerfilOpen] = useState(false);
-  const [historialOpen, setHistorialOpen] = useState(false);
+  const [historialOpen, setHistorialOpen] = useState(false); // <-- Estado que abre el modal
 
   // Filtros
   const [search, setSearch] = useState("");
@@ -47,7 +48,7 @@ const UserDashboardPage: React.FC = () => {
 
   const navigate = useNavigate();
 
-  // 🧩 Cargar datos iniciales
+  // Cargar datos iniciales
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     const token = localStorage.getItem("token");
@@ -67,7 +68,9 @@ const UserDashboardPage: React.FC = () => {
         );
         setUser(userRes.data);
 
-        const productosRes = await axios.get("http://localhost:8008/api/productos");
+        const productosRes = await axios.get(
+          "http://localhost:8008/api/productos"
+        );
         setProductos(productosRes.data);
 
         const ventasRes = await axios.get(
@@ -83,7 +86,7 @@ const UserDashboardPage: React.FC = () => {
     fetchData();
   }, [navigate]);
 
-  // --- 🛒 Carrito ---
+  // --- Carrito ---
   const handleAddToCart = (producto: Product) => {
     setCartItems((prev) => {
       const existing = prev.find((i) => i.product.id === producto.id);
@@ -102,13 +105,12 @@ const UserDashboardPage: React.FC = () => {
         : prev.map((i) => (i.product.id === id ? { ...i, qty } : i))
     );
 
-  // --- 💳 Checkout / Comprar ---
+  // --- Checkout / Comprar ---
   const handleCheckout = async () => {
     if (cartItems.length === 0) {
       await Swal.fire("🛒 Tu carrito está vacío", "", "info");
       return;
     }
-
     const confirmacion = await Swal.fire({
       title: "¿Confirmar compra?",
       text: "¿Deseas continuar con el pago de tus productos?",
@@ -128,8 +130,6 @@ const UserDashboardPage: React.FC = () => {
         await Swal.fire("⚠️ Debes iniciar sesión", "", "warning");
         return;
       }
-
-      // Enviar cada producto del carrito al backend
       for (const item of cartItems) {
         await axios.post(
           `http://localhost:8008/api/ventas?productoId=${item.product.id}&cantidad=${item.qty}`,
@@ -137,13 +137,11 @@ const UserDashboardPage: React.FC = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
       }
-
       await Swal.fire(
         "✅ Compra exitosa",
         "Revisa tu correo para la confirmación de tu compra.",
         "success"
       );
-
       setCartItems([]);
       setTotal(0);
       setCartOpen(false);
@@ -166,14 +164,15 @@ const UserDashboardPage: React.FC = () => {
     navigate("/productos", { replace: true });
   };
 
-  // 🔍 Filtros de productos
+  // Filtros de productos
   const filtered = useMemo(() => {
     let list = productos.filter((p) =>
       p.nombre.toLowerCase().includes(search.toLowerCase())
     );
-    if (categoria !== "Todos") list = list.filter((p) => p.categoria === categoria);
+    if (categoria !== "Todos")
+      list = list.filter((p) => p.categoria === categoria);
     if (orden === "precio-asc") list.sort((a, b) => a.precio - b.precio);
-    if (orden === "precio-desc") list.sort((a, b) => b.precio - a.precio);
+    if (orden === "precio-desc") list.sort((a, b) => b.precio - b.precio);
     return list;
   }, [productos, search, categoria, orden]);
 
@@ -184,62 +183,31 @@ const UserDashboardPage: React.FC = () => {
       <DashboardHeader
         user={user}
         cartItems={cartItems}
+        isHistorialOpen={historialOpen}
         onCartClick={() => setCartOpen(true)}
         onPerfilClick={() => setPerfilOpen(true)}
-        onHistorialClick={() => setHistorialOpen((p) => !p)}
+        onHistorialClick={() => setHistorialOpen(true)} // <-- ABRE EL MODAL
         onLogout={handleLogout}
         menuOpen={menuOpen}
         setMenuOpen={setMenuOpen}
       />
 
-      <DashboardFilters
-        search={search}
-        categoria={categoria}
-        orden={orden}
-        setSearch={setSearch}
-        setCategoria={setCategoria}
-        setOrden={setOrden}
-      />
-
-      {/* 🧱 Productos */}
-      <DashboardProducts productos={filtered} onAddToCart={handleAddToCart} />
-
-      {/* 🧾 Historial de compras */}
-      {historialOpen && (
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-7xl mx-auto bg-white rounded-xl shadow-md p-6 mt-6"
-        >
-          <h2 className="text-xl font-semibold text-teal-600 mb-4">
-            🧾 Historial de Compras
-          </h2>
-          {ventas.length === 0 ? (
-            <p className="text-gray-600">No tienes compras aún.</p>
-          ) : (
-            <table className="min-w-full text-sm text-gray-700">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="p-2">Producto</th>
-                  <th className="p-2">Cantidad</th>
-                  <th className="p-2">Fecha</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ventas.map((v, i) => (
-                  <tr key={i} className="border-b">
-                    <td className="p-2">{v.producto.nombre}</td>
-                    <td className="p-2">{v.cantidad}</td>
-                    <td className="p-2">
-                      {new Date(v.fecha).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </motion.section>
-      )}
+      {/* MUESTRA SIEMPRE LOS PRODUCTOS Y FILTROS */}
+      <motion.div
+        key="productos"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <DashboardFilters
+          search={search}
+          categoria={categoria}
+          orden={orden}
+          setSearch={setSearch}
+          setCategoria={setCategoria}
+          setOrden={setOrden}
+        />
+        <DashboardProducts productos={filtered} onAddToCart={handleAddToCart} />
+      </motion.div>
 
       {/* 🛒 Sidebar Carrito */}
       <CartSidebar
@@ -260,6 +228,14 @@ const UserDashboardPage: React.FC = () => {
           user={user}
           setUser={setUser}
           onClose={() => setPerfilOpen(false)}
+        />
+      )}
+
+      {/* 🧾 MODAL DE HISTORIAL (EN LUGAR DE LA SECCIÓN DE ABAJO) */}
+      {historialOpen && (
+        <HistorialModal
+          ventas={ventas}
+          onClose={() => setHistorialOpen(false)}
         />
       )}
     </div>

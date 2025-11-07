@@ -1,14 +1,15 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { ShoppingCart, UserCircle2 } from "lucide-react";
+import { ShoppingCart, UserCircle2, User, ListOrdered, LogOut } from "lucide-react";
 import type { CartItem } from "../Products/CartSidebar";
 
 interface Props {
   user: { nombre: string };
   cartItems: CartItem[];
+  isHistorialOpen: boolean; // Le pasamos el estado actual
   onCartClick: () => void;
   onPerfilClick: () => void;
-  onHistorialClick: () => void;
+  onHistorialClick: () => void; // Este es el toggle
   onLogout: () => void;
   menuOpen: boolean;
   setMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -17,6 +18,7 @@ interface Props {
 const DashboardHeader: React.FC<Props> = ({
   user,
   cartItems,
+  isHistorialOpen, // No se usa para el título en esta versión
   onCartClick,
   onPerfilClick,
   onHistorialClick,
@@ -32,6 +34,7 @@ const DashboardHeader: React.FC<Props> = ({
     />
 
     <h1 className="text-lg sm:text-xl font-semibold text-center flex-1">
+      {/* Título Fijo como lo tenías */}
       🛍️ Tus Productos Disponibles
     </h1>
 
@@ -58,19 +61,32 @@ const DashboardHeader: React.FC<Props> = ({
         {user.nombre.split(" ")[0]}
       </button>
 
+      {/* --- MENÚ CORREGIDO (COMO TÚ QUERÍAS) --- */}
       {menuOpen && (
-        <div className="absolute right-0 top-12 w-56 bg-white text-gray-800 shadow-xl rounded-xl border overflow-hidden">
-          <button onClick={onPerfilClick} className="w-full px-4 py-2 hover:bg-gray-100">
-            👤 Perfil
+        <div className="absolute right-0 top-14 w-56 bg-white text-gray-800 shadow-xl rounded-xl border overflow-hidden py-1">
+          <button
+            onClick={() => {
+              onPerfilClick();
+              setMenuOpen(false);
+            }}
+            className="w-full px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+          >
+            <User size={16} /> Perfil
           </button>
-          <button onClick={onHistorialClick} className="w-full px-4 py-2 hover:bg-gray-100">
-            🧾 Historial
+          <button
+            onClick={() => {
+              onHistorialClick(); // <-- Llama al toggle
+              setMenuOpen(false);
+            }}
+            className="w-full px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+          >
+            <ListOrdered size={16} /> Historial
           </button>
           <button
             onClick={onLogout}
-            className="w-full px-4 py-2 text-red-600 hover:bg-gray-100"
+            className="w-full px-4 py-2 text-red-600 hover:bg-gray-100 flex items-center gap-2"
           >
-            🚪 Cerrar sesión
+            <LogOut size={16} /> Cerrar sesión
           </button>
         </div>
       )}
