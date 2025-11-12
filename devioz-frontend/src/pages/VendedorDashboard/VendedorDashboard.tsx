@@ -33,7 +33,7 @@ const MOCK_PEDIDOS_PENDIENTES: PedidoPendiente[] = [
 ];
 
 const MOCK_PEDIDOS_AGENDADOS: PedidoAgendado[] = [
-  { id: 101, productoNombre: "Laptop Lenovo Legion", clienteNombre: "Diego Rojas", fechaEnvio: "2025-11-12", direccion: "Estación Atocongo", vendedor: "Vendedor Estático" }
+  { id: 101, productoNombre: "Laptop Lenovo Legion", clienteNombre: "Diego Rojas", fechaEnvio: "2025-11-12", direccion: "Estación Atocongo", vendedor: "miguel" } // <-- CAMBIADO AQUÍ TAMBIÉN
 ];
 // --- Fin Mocks ---
 
@@ -47,9 +47,6 @@ const VendedorDashboard: React.FC = () => {
   const [pedidosPendientes, setPedidosPendientes] = useState(MOCK_PEDIDOS_PENDIENTES);
   const [pedidosAgendados, setPedidosAgendados] = useState(MOCK_PEDIDOS_AGENDADOS);
   const [agendando, setAgendando] = useState<PedidoPendiente | null>(null);
-
-  // --- 👇 LÍNEA ELIMINADA ---
-  // const productosConBajoStock = productos.filter(p => p.stock < 10).length; // <-- Advertencia arreglada
 
   const handleMarcarLeida = (id: number) => {
     setNotificaciones(prev => prev.map(n => (n.id === id ? { ...n, leido: true } : n)));
@@ -70,7 +67,8 @@ const VendedorDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900">
       <VendedorHeader
-        vendedorNombre="Vendedor Estático"
+        // --- 👇 CAMBIO 1 AQUÍ ---
+        vendedorNombre="miguel" 
         notificaciones={notificaciones}
         onLogout={handleLogout}
         onNotificacionLeida={handleMarcarLeida}
@@ -169,7 +167,8 @@ const VendedorDashboard: React.FC = () => {
       {agendando && (
         <VendedorAgendarModal
           pedido={agendando}
-          vendedorNombre="Vendedor Estático"
+          // --- 👇 CAMBIO 2 AQUÍ ---
+          vendedorNombre="miguel"
           onClose={() => setAgendando(null)}
           onSave={handleSaveAgendamiento}
         />

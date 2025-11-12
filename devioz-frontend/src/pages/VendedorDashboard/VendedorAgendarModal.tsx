@@ -111,7 +111,7 @@ const VendedorAgendarModal: React.FC<Props> = ({ pedido, vendedorNombre, onClose
             <input
               type="text"
               value={vendedorNombre}
-              readOnly
+              readOnly  
               disabled
               className="w-full border border-gray-300 px-3 py-2 rounded bg-gray-100 text-gray-500 cursor-not-allowed"
             />
