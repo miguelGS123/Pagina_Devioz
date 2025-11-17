@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react"; // 1. Importar useEffect
+// En: src/pages/AdminDashboard/AdminProductsTable.tsx
+import React, { useState } from "react"; // Ya no se necesita 'useEffect'
 import api from "../../api/axiosConfig";
-import Swal from "sweetalert2";
+import Swal, { SweetAlertResult } from "sweetalert2"; // <-- 1. Importa SweetAlertResult
 import { AxiosResponse } from "axios";
 
 interface Producto {
@@ -13,26 +14,22 @@ interface Producto {
   imagen?: string;
 }
 
+// --- 2. 'setProductos' añadido a las Props ---
 interface Props {
   productos: Producto[];
+  setProductos: React.Dispatch<React.SetStateAction<Producto[]>>;
 }
 
-const AdminProductsTable: React.FC<Props> = ({ productos }) => {
-  const [items, setItems] = useState(productos);
+// --- 3. Recibe 'setProductos' ---
+const AdminProductsTable: React.FC<Props> = ({ productos, setProductos }) => {
+  // --- 4. Estado local 'items' ELIMINADO ---
   const [editing, setEditing] = useState<Producto | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // 2. AÑADIDO: Sincronizador de estado
-  // Si los 'productos' (que vienen del componente padre) cambian,
-  // este 'useEffect' fuerza la actualización del estado local 'items'.
-  // Esto soluciona que los datos se vean viejos al navegar.
-  useEffect(() => {
-    setItems(productos);
-  }, [productos]);
-
   // 🗑️ Eliminar producto
   const handleDelete = async (id: number) => {
-    const confirm = await Swal.fire({
+    // --- 5. Tipo añadido a 'confirm' ---
+    const confirm: SweetAlertResult = await Swal.fire({
       title: "¿Eliminar producto?",
       text: "Esta acción no se puede deshacer.",
       icon: "warning",
@@ -47,8 +44,9 @@ const AdminProductsTable: React.FC<Props> = ({ productos }) => {
 
     try {
       setLoading(true);
-      await api.delete(`/productos/${id}`);
-      setItems((prev) => prev.filter((p) => p.id !== id));
+      await api.delete(`/productos/${id}`); // Usa la ruta API correcta
+      // --- 6. Usa 'setProductos' (del padre) ---
+      setProductos((prev) => prev.filter((p) => p.id !== id));
       Swal.fire("Eliminado", "El producto fue eliminado correctamente.", "success");
     } catch (error: any) {
       console.error("❌ Error al eliminar producto:", error);
@@ -70,14 +68,26 @@ const AdminProductsTable: React.FC<Props> = ({ productos }) => {
       let response: AxiosResponse<Producto>;
 
       if (prod.id) {
-        response = await api.put(`/productos/${prod.id}`, prod);
-        setItems((prev) => prev.map((p) => (p.id === prod.id ? response.data : p)));
-        Swal.fire("✅ Actualizado", "El producto fue actualizado correctamente.", "success");
+        response = await api.put(`/productos/${prod.id}`, prod); // Usa la ruta API correcta
+        // --- 7. Usa 'setProductos' (del padre) ---
+        setProductos((prev) =>
+          prev.map((p) => (p.id === prod.id ? response.data : p))
+        );
+        Swal.fire(
+          "✅ Actualizado",
+          "El producto fue actualizado correctamente.",
+          "success"
+        );
       } else {
         const { id, ...nuevoProducto } = prod;
-        response = await api.post(`/productos`, nuevoProducto);
-        setItems((prev) => [...prev, response.data]);
-        Swal.fire("✅ Creado", "El producto fue agregado correctamente.", "success");
+        response = await api.post(`/productos`, nuevoProducto); // Usa la ruta API correcta
+        // --- 8. Usa 'setProductos' (del padre) ---
+        setProductos((prev) => [...prev, response.data]);
+        Swal.fire(
+          "✅ Creado",
+          "El producto fue agregado correctamente.",
+          "success"
+        );
       }
 
       setEditing(null);
@@ -127,7 +137,6 @@ const AdminProductsTable: React.FC<Props> = ({ productos }) => {
         </button>
       </div>
 
-      {/* Tabla de productos */}
       <table className="min-w-full text-sm text-gray-700 border-collapse">
         <thead>
           <tr className="bg-gray-100 text-left">
@@ -139,7 +148,8 @@ const AdminProductsTable: React.FC<Props> = ({ productos }) => {
           </tr>
         </thead>
         <tbody>
-          {items.map((p) => (
+          {/* --- 9. Mapea sobre 'productos' (de las props) --- */}
+          {productos.map((p) => (
             <tr key={p.id} className="border-b hover:bg-gray-50 transition">
               <td className="p-2 font-medium">{p.nombre}</td>
               <td className="p-2">S/ {p.precio.toFixed(2)}</td>
@@ -224,7 +234,11 @@ const AdminProductsTable: React.FC<Props> = ({ productos }) => {
                     headers: { "Content-Type": "multipart/form-data" },
                   });
                   setEditing({ ...editing, imagen: res.data });
-                  Swal.fire("✅ Imagen subida", "La imagen fue cargada correctamente", "success");
+                  Swal.fire(
+                    "✅ Imagen subida",
+                    "La imagen fue cargada correctamente",
+                    "success"
+                  );
                 } catch {
                   Swal.fire("❌ Error", "No se pudo subir la imagen", "error");
                 }

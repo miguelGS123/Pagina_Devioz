@@ -1,95 +1,60 @@
+// En: src/main/java/com/devioz/backend/controller/UsuarioController.java
 package com.devioz.backend.controller;
 
 import com.devioz.backend.model.Usuario;
 import com.devioz.backend.service.UsuarioService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/usuarios")
+@CrossOrigin(origins = "http://localhost:5173")
 public class UsuarioController {
 
-    @Autowired
-    private UsuarioService usuarioService;
+    private final UsuarioService usuarioService;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    public UsuarioController(UsuarioService usuarioService) {
+        this.usuarioService = usuarioService;
+    }
 
-    // ✅ Listar todos los usuarios normales (solo ADMIN)
+    // GET /api/usuarios (Obtener todos)
     @GetMapping
-    @PreAuthorize("hasAuthority('ROL_ADMIN')")
-    public List<Usuario> listarUsuarios() {
-        return usuarioService.getUsuariosNormales();
+    public List<Usuario> getAllUsuarios() {
+        return usuarioService.getAllUsuarios();
     }
 
-    // ✅ Listar todos los vendedores (solo ADMIN)
-    @GetMapping("/vendedores")
-    @PreAuthorize("hasAuthority('ROL_ADMIN')")
-    public List<Usuario> listarVendedores() {
-        return usuarioService.getVendedores();
-    }
-
-    // ✅ Obtener usuario por ID (ADMIN o propio usuario)
+    // GET /api/usuarios/{id} (Obtener uno)
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROL_ADMIN') or #id == principal.id")
-    public Optional<Usuario> obtenerUsuario(@PathVariable Long id) {
-        return usuarioService.getUsuarioById(id);
+    public ResponseEntity<Usuario> getUsuarioById(@PathVariable Long id) {
+        return usuarioService.getUsuarioById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    // ✅ Actualizar usuario (solo el propio usuario)
+    // POST /api/usuarios (Crear usuario - Admin)
+    @PostMapping
+    public Usuario createUsuario(@RequestBody Usuario usuario) {
+        // El servicio se encará de encriptar la contraseña
+        return usuarioService.createUsuario(usuario);
+    }
+
+    // PUT /api/usuarios/{id} (Actualizar usuario - Admin)
     @PutMapping("/{id}")
-    @PreAuthorize("#id == principal.id")
-    public Usuario actualizarUsuario(@PathVariable Long id, @RequestBody Usuario usuarioActualizado) {
-        Optional<Usuario> usuarioOpt = usuarioService.getUsuarioById(id);
-        if (usuarioOpt.isPresent()) {
-            Usuario usuario = usuarioOpt.get();
-            usuario.setNombre(usuarioActualizado.getNombre());
-            usuario.setTelefono(usuarioActualizado.getTelefono());
-            if (usuarioActualizado.getPassword() != null && !usuarioActualizado.getPassword().isEmpty()) {
-                usuario.setPassword(passwordEncoder.encode(usuarioActualizado.getPassword()));
-            }
-            return usuarioService.saveUsuario(usuario);
+    public ResponseEntity<Usuario> updateUsuario(@PathVariable Long id, @RequestBody Usuario usuarioDetails) {
+        try {
+            Usuario updatedUsuario = usuarioService.updateUsuario(id, usuarioDetails);
+            return ResponseEntity.ok(updatedUsuario);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
         }
-        return null;
     }
 
-    // ✅ Eliminar propio usuario (USUARIO o ADMIN si necesita)
-    @DeleteMapping("/mi-cuenta")
-    @PreAuthorize("hasAuthority('ROL_USUARIO') or hasAuthority('ROL_ADMIN')")
-    public String eliminarMiCuenta(@RequestParam String email) {
-        usuarioService.deleteUsuarioByEmail(email);
-        return "Cuenta eliminada correctamente ✅";
-    }
-
-    // ✅ Crear vendedor (solo ADMIN)
-    @PostMapping("/vendedor")
-    @PreAuthorize("hasAuthority('ROL_ADMIN')")
-    public Usuario crearVendedor(@RequestBody Usuario vendedor) {
-        vendedor.setPassword(passwordEncoder.encode(vendedor.getPassword()));
-        vendedor.setRol(Usuario.Rol.ROL_VENDEDOR);
-        return usuarioService.saveUsuario(vendedor);
-    }
-
-    // ✅ Eliminar vendedor (solo ADMIN)
-    @DeleteMapping("/vendedor/{id}")
-    @PreAuthorize("hasAuthority('ROL_ADMIN')")
-    public String eliminarVendedor(@PathVariable Long id) {
-        usuarioService.deleteUsuarioById(id);
-        return "Vendedor eliminado correctamente ✅";
-    }
-
-    // ✅ Dashboard según rol (opcional, puede usarse para frontend)
-    @GetMapping("/dashboard")
-    public String dashboard(@RequestParam String rol) {
-        switch (rol) {
-            case "ROL_ADMIN": return "Bienvenido al panel de ADMIN 🚀";
-            case "ROL_VENDEDOR": return "Bienvenido al panel de VENDEDOR 🚀";
-            default: return "Bienvenido al panel de USUARIO 🚀";
-        }
+    // DELETE /api/usuarios/{id} (Eliminar usuario - Admin)
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUsuario(@PathVariable Long id) {
+        usuarioService.deleteUsuario(id);
+        return ResponseEntity.noContent().build();
     }
 }

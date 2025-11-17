@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import Swal from "sweetalert2";
 import { motion } from "framer-motion";
 import AdminHeader from "./AdminHeader";
@@ -7,9 +6,11 @@ import AdminProductsTable from "./AdminProductsTable";
 import AdminUsersTable from "./AdminUsersTable";
 import AdminSalesTable from "./AdminSalesTable";
 import AdminSalesDashboard from "./AdminSalesDashboard";
+import api from "../../api/axiosConfig"; // <-- Usa tu 'api' configurada
 
+// --- CORRECCIÓN: Interfaces opcionales ---
 interface Usuario {
-  id: number;
+  id?: number; // <-- 'id' debe ser opcional
   nombre: string;
   email: string;
   telefono?: string;
@@ -17,7 +18,7 @@ interface Usuario {
 }
 
 interface Producto {
-  id: number;
+  id?: number; // <-- 'id' debe ser opcional
   nombre: string;
   descripcion: string;
   precio: number;
@@ -43,50 +44,50 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token"); // El interceptor de 'api' lo usará
 
     if (!storedUser || !token) {
       Swal.fire("Sesión expirada", "Inicia sesión nuevamente", "warning");
-      window.location.href = "/productos";
+      window.location.href = "/"; // Redirige a la raíz
       return;
     }
 
     const parsedUser: Usuario = JSON.parse(storedUser);
     if (parsedUser.rol !== "ROL_ADMIN") {
       Swal.fire("Acceso denegado", "No tienes permisos de administrador", "error");
-      window.location.href = "/productos";
+      window.location.href = "/";
       return;
     }
-
     setUser(parsedUser);
 
     const loadData = async () => {
       try {
-        const [prod, users, sales] = await Promise.all([
-          axios.get("http://localhost:8008/api/productos", {
-            headers: { Authorization: `Bearer ${token}` },
+        const [prodRes, usersRes, salesRes] = await Promise.all([
+          // --- ESTA ES LA LLAMADA QUE FALLA ---
+          // Arreglada para no tener /api y SÍ tener no-cache
+          api.get("/productos", {
+            headers: {
+              "Cache-Control": "no-cache",
+              "Pragma": "no-cache",
+              "Expires": "0",
+            },
           }),
-          axios.get("http://localhost:8008/api/usuarios", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get("http://localhost:8008/api/ventas", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+          api.get("/usuarios"), // Ruta relativa (sin /api)
+          api.get("/ventas"),   // Ruta relativa (sin /api)
         ]);
-        setProductos(prod.data);
-        setUsuarios(users.data);
-        setVentas(sales.data);
+        setProductos(prodRes.data);
+        setUsuarios(usersRes.data);
+        setVentas(salesRes.data);
       } catch (err) {
         console.error("Error cargando datos:", err);
       }
     };
-
     loadData();
   }, []);
 
   const handleLogout = () => {
     localStorage.clear();
-    window.location.href = "/productos";
+    window.location.href = "/";
   };
 
   return (
@@ -123,8 +124,18 @@ const AdminDashboard: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          {tab === "productos" && <AdminProductsTable productos={productos} />}
-          {tab === "usuarios" && <AdminUsersTable usuarios={usuarios} />}
+          {/* Estos 'setProductos' y 'setUsuarios' arreglan los TypeErrors */}
+          {tab === "productos" && (
+            <AdminProductsTable
+              productos={productos}
+              setProductos={setProductos}
+            />
+          )}
+          
+          {tab === "usuarios" && (
+            <AdminUsersTable usuarios={usuarios} setUsuarios={setUsuarios} />
+          )}
+          
           {tab === "ventas" && <AdminSalesTable ventas={ventas} />}
           {tab === "dashboard" && <AdminSalesDashboard ventas={ventas} />}
         </motion.div>

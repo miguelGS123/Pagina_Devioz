@@ -1,8 +1,9 @@
+// En: src/main/java/com/devioz/backend/service/UsuarioService.java
 package com.devioz.backend.service;
 
 import com.devioz.backend.model.Usuario;
 import com.devioz.backend.repository.UsuarioRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,52 +12,51 @@ import java.util.Optional;
 @Service
 public class UsuarioService {
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    // 🔹 Obtener todos los usuarios
+    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
+        this.usuarioRepository = usuarioRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
     public List<Usuario> getAllUsuarios() {
         return usuarioRepository.findAll();
     }
 
-    // 🔹 Obtener usuario por email
-    public Optional<Usuario> getUsuarioByEmail(String email) {
-        return usuarioRepository.findByEmail(email);
-    }
-
-    // 🔹 Obtener usuario por ID
     public Optional<Usuario> getUsuarioById(Long id) {
         return usuarioRepository.findById(id);
     }
 
-    // 🔹 Crear o guardar usuario (útil para admin al crear vendedores)
-    public Usuario saveUsuario(Usuario usuario) {
+    // Lógica para crear un nuevo usuario (encriptando)
+    public Usuario createUsuario(Usuario usuario) {
+        // Aseguramos que el rol exista y encriptamos contraseña
+        if (usuario.getRol() == null) {
+            usuario.setRol(Usuario.Rol.ROL_USUARIO); // Default
+        }
+        usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
         return usuarioRepository.save(usuario);
     }
 
-    // 🔹 Eliminar usuario por ID (solo admin para borrar vendedores)
-    public void deleteUsuarioById(Long id) {
+    // Lógica para actualizar (con chequeo de contraseña)
+    public Usuario updateUsuario(Long id, Usuario usuarioDetails) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        usuario.setNombre(usuarioDetails.getNombre());
+        usuario.setEmail(usuarioDetails.getEmail());
+        usuario.setTelefono(usuarioDetails.getTelefono());
+        usuario.setRol(usuarioDetails.getRol());
+
+        // IMPORTANTE: Solo actualiza la contraseña SI se provee una nueva
+        if (usuarioDetails.getPassword() != null && !usuarioDetails.getPassword().isEmpty()) {
+            usuario.setPassword(passwordEncoder.encode(usuarioDetails.getPassword()));
+        }
+
+        return usuarioRepository.save(usuario);
+    }
+
+    public void deleteUsuario(Long id) {
         usuarioRepository.deleteById(id);
-    }
-
-    // 🔹 Eliminar usuario por email (útil para que el propio usuario borre su cuenta)
-    public void deleteUsuarioByEmail(String email) {
-        usuarioRepository.findByEmail(email).ifPresent(usuarioRepository::delete);
-    }
-
-    // 🔹 Listar todos los vendedores
-    public List<Usuario> getVendedores() {
-        return usuarioRepository.findAll()
-                .stream()
-                .filter(u -> u.getRol() == Usuario.Rol.ROL_VENDEDOR)
-                .toList();
-    }
-
-    // 🔹 Listar todos los usuarios normales
-    public List<Usuario> getUsuariosNormales() {
-        return usuarioRepository.findAll()
-                .stream()
-                .filter(u -> u.getRol() == Usuario.Rol.ROL_USUARIO)
-                .toList();
     }
 }
