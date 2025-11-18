@@ -1,6 +1,7 @@
-// En: VendedorDashboard/VendedorProductsTable.tsx
-import React, { useState, useMemo } from "react"; // <-- 1. Importar useMemo
+// En: src/pages/VendedorDashboard/VendedorProductsTable.tsx
+import React, { useState, useMemo } from "react";
 import Swal from "sweetalert2";
+import api from "../../api/axiosConfig"; // <-- 1. Importamos la API
 
 export interface VendedorProducto {
   id?: number;
@@ -21,15 +22,11 @@ const VendedorProductsTable: React.FC<Props> = ({ productos, setProductos }) => 
   const [editing, setEditing] = useState<VendedorProducto | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // --- 2. ESTADOS PARA LOS FILTROS ---
   const [search, setSearch] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("Todas");
 
-  // --- 3. LÓGICA DE FILTRADO ---
-  // Extrae todas las categorías únicas de los productos para el <select>
   const categoriasUnicas = ["Todas", ...new Set(productos.map(p => p.categoria))];
 
-  // useMemo filtra la lista solo cuando los productos o los filtros cambian
   const productosFiltrados = useMemo(() => {
     return productos.filter(p => {
       const matchSearch = p.nombre.toLowerCase().includes(search.toLowerCase());
@@ -38,28 +35,34 @@ const VendedorProductsTable: React.FC<Props> = ({ productos, setProductos }) => 
     });
   }, [productos, search, categoriaFiltro]);
 
-
-  // Guardar (Crear o Editar) - Estático
+  // --- 2. LÓGICA REAL (CONECTADA AL BACKEND) ---
   const handleSave = async (prod: VendedorProducto) => {
-    // (Lógica de handleSave... igual que antes)
     try {
       if (!prod.nombre || prod.precio <= 0 || prod.stock < 0) {
         Swal.fire("⚠️ Campos inválidos", "Verifica los datos ingresados.", "warning");
         return;
       }
+
       setLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 500)); 
+      // Ya no usamos setTimeout, usamos la API real
+      
       if (prod.id) {
-        setProductos(prev => prev.map(p => (p.id === prod.id ? prod : p)));
-        Swal.fire("✅ Actualizado", "Producto actualizado (modo estático).", "success");
+        // --- ACTUALIZAR (PUT) ---
+        const res = await api.put(`/productos/${prod.id}`, prod);
+        // Actualizamos el estado con la respuesta del servidor
+        setProductos(prev => prev.map(p => (p.id === prod.id ? res.data : p)));
+        Swal.fire("✅ Actualizado", "Producto actualizado correctamente.", "success");
       } else {
-        const nuevoProducto = { ...prod, id: Date.now() };
-        setProductos(prev => [...prev, nuevoProducto]);
-        Swal.fire("✅ Creado", "Producto creado (modo estático).", "success");
+        // --- CREAR (POST) ---
+        const res = await api.post("/productos", prod);
+        // Añadimos el producto nuevo (que ya viene con ID y CreadoPor desde el backend)
+        setProductos(prev => [...prev, res.data]);
+        Swal.fire("✅ Creado", "Producto creado correctamente.", "success");
       }
       setEditing(null);
-    } catch (error) {
-      Swal.fire("Error", "Hubo un error (modo estático).", "error");
+    } catch (error: any) {
+      console.error(error);
+      Swal.fire("Error", "Hubo un error al guardar el producto.", "error");
     } finally {
       setLoading(false);
     }
@@ -76,6 +79,7 @@ const VendedorProductsTable: React.FC<Props> = ({ productos, setProductos }) => 
     });
   };
 
+  // ... (El resto del JSX del modal y la tabla es idéntico al anterior) ...
   return (
     <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 relative">
       {loading && <div className="absolute inset-0 bg-white/70 z-50 flex items-center justify-center"><p>Procesando...</p></div>}
@@ -85,7 +89,6 @@ const VendedorProductsTable: React.FC<Props> = ({ productos, setProductos }) => 
           Gestión de Mis Productos
         </h2>
         
-        {/* --- 4. JSX DE LOS FILTROS --- */}
         <div className="flex flex-col md:flex-row items-center gap-3">
           <input
             type="text"
@@ -112,7 +115,6 @@ const VendedorProductsTable: React.FC<Props> = ({ productos, setProductos }) => 
         </div>
       </div>
 
-      {/* --- 5. TABLA USA LOS FILTROS --- */}
       <table className="min-w-full text-sm text-gray-700 border-collapse">
         <thead>
           <tr className="bg-gray-100 text-left">
@@ -124,7 +126,9 @@ const VendedorProductsTable: React.FC<Props> = ({ productos, setProductos }) => 
           </tr>
         </thead>
         <tbody>
-          {/* Mapea sobre la lista filtrada */}
+          {productosFiltrados.length === 0 && (
+              <tr><td colSpan={5} className="p-4 text-center text-gray-500">No tienes productos aún.</td></tr>
+          )}
           {productosFiltrados.map((p) => (
             <tr key={p.id} className="border-b hover:bg-gray-50 transition">
               <td className="p-2 font-medium">{p.nombre}</td>
@@ -144,7 +148,7 @@ const VendedorProductsTable: React.FC<Props> = ({ productos, setProductos }) => 
         </tbody>
       </table>
 
-      {/* ... (El JSX del Modal de Edición no cambia) ... */}
+      {/* Modal de creación / edición */}
       {editing && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-96 shadow-2xl">
@@ -166,10 +170,10 @@ const VendedorProductsTable: React.FC<Props> = ({ productos, setProductos }) => 
               onChange={(e) => setEditing({ ...editing, categoria: e.target.value })}
               className="w-full border border-gray-300 px-3 py-2 mb-3 rounded focus:ring-2 focus:ring-teal-500 bg-white"
             >
-              {/* Filtra "Todas" para que no sea una opción de guardado */}
-              {categoriasUnicas.filter(c => c !== 'Todas').map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
+              <option value="Laptops">Laptops</option>
+              <option value="Celulares">Celulares</option>
+              <option value="Accesorios">Accesorios</option>
+              <option value="Periféricos">Periféricos</option>
             </select>
             <input
               type="text" placeholder="URL de Imagen" value={editing.imagen}

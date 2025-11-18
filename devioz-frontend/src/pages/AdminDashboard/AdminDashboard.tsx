@@ -1,3 +1,4 @@
+// En: src/pages/AdminDashboard/AdminDashboard.tsx
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import { motion } from "framer-motion";
@@ -6,11 +7,10 @@ import AdminProductsTable from "./AdminProductsTable";
 import AdminUsersTable from "./AdminUsersTable";
 import AdminSalesTable from "./AdminSalesTable";
 import AdminSalesDashboard from "./AdminSalesDashboard";
-import api from "../../api/axiosConfig"; // <-- Usa tu 'api' configurada
+import api from "../../api/axiosConfig"; 
 
-// --- CORRECCIÓN: Interfaces opcionales ---
 interface Usuario {
-  id?: number; // <-- 'id' debe ser opcional
+  id?: number;
   nombre: string;
   email: string;
   telefono?: string;
@@ -18,7 +18,7 @@ interface Usuario {
 }
 
 interface Producto {
-  id?: number; // <-- 'id' debe ser opcional
+  id?: number;
   nombre: string;
   descripcion: string;
   precio: number;
@@ -44,27 +44,26 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("token"); // El interceptor de 'api' lo usará
+    const token = localStorage.getItem("token");
 
     if (!storedUser || !token) {
       Swal.fire("Sesión expirada", "Inicia sesión nuevamente", "warning");
-      window.location.href = "/"; // Redirige a la raíz
+      window.location.href = "/productos";
       return;
     }
 
     const parsedUser: Usuario = JSON.parse(storedUser);
     if (parsedUser.rol !== "ROL_ADMIN") {
       Swal.fire("Acceso denegado", "No tienes permisos de administrador", "error");
-      window.location.href = "/";
+      window.location.href = "/productos";
       return;
     }
+
     setUser(parsedUser);
 
     const loadData = async () => {
       try {
         const [prodRes, usersRes, salesRes] = await Promise.all([
-          // --- ESTA ES LA LLAMADA QUE FALLA ---
-          // Arreglada para no tener /api y SÍ tener no-cache
           api.get("/productos", {
             headers: {
               "Cache-Control": "no-cache",
@@ -72,8 +71,8 @@ const AdminDashboard: React.FC = () => {
               "Expires": "0",
             },
           }),
-          api.get("/usuarios"), // Ruta relativa (sin /api)
-          api.get("/ventas"),   // Ruta relativa (sin /api)
+          api.get("/usuarios"),
+          api.get("/ventas"),
         ]);
         setProductos(prodRes.data);
         setUsuarios(usersRes.data);
@@ -82,12 +81,14 @@ const AdminDashboard: React.FC = () => {
         console.error("Error cargando datos:", err);
       }
     };
+
     loadData();
   }, []);
 
   const handleLogout = () => {
     localStorage.clear();
-    window.location.href = "/";
+    // --- 👇 CAMBIO: Redirige a /productos ---
+    window.location.href = "/productos";
   };
 
   return (
@@ -124,7 +125,6 @@ const AdminDashboard: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          {/* Estos 'setProductos' y 'setUsuarios' arreglan los TypeErrors */}
           {tab === "productos" && (
             <AdminProductsTable
               productos={productos}
@@ -133,7 +133,11 @@ const AdminDashboard: React.FC = () => {
           )}
           
           {tab === "usuarios" && (
-            <AdminUsersTable usuarios={usuarios} setUsuarios={setUsuarios} />
+            <AdminUsersTable 
+              usuarios={usuarios} 
+              setUsuarios={setUsuarios} 
+              currentAdminId={user?.id}
+            />
           )}
           
           {tab === "ventas" && <AdminSalesTable ventas={ventas} />}
