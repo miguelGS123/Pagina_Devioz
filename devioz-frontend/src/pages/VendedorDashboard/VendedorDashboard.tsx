@@ -9,7 +9,9 @@ import api from "../../api/axiosConfig";
 
 const VendedorDashboard: React.FC = () => {
   const [productos, setProductos] = useState<VendedorProducto[]>([]);
+  // Estado para TODAS las ventas reales que vienen de la BD
   const [ventasReales, setVentasReales] = useState<any[]>([]);
+  
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [notificacionAbierta, setNotificacionAbierta] = useState<Notificacion | null>(null);
   const [tab, setTab] = useState("pedidos");
@@ -18,31 +20,34 @@ const VendedorDashboard: React.FC = () => {
   const userStr = localStorage.getItem("user");
   const userObj = userStr ? JSON.parse(userStr) : { nombre: "Vendedor" };
 
+  // --- CARGAR DATOS REALES ---
   const fetchData = async () => {
     try {
       const [prodRes, ventasRes] = await Promise.all([
-        // Pedimos TODOS los productos (públicos)
+        // 1. Traer TODOS los productos (públicos) para ver inventario
         api.get("/productos", { headers: { "Cache-Control": "no-cache" } }),
-        // Pedimos TODAS las ventas
-        api.get("/ventas", { headers: { "Cache-Control": "no-cache" } })
+        // 2. Traer TODAS las ventas para gestionar logística (usa tu nuevo endpoint)
+        api.get("/ventas/vendedor", { headers: { "Cache-Control": "no-cache" } })
       ]);
 
       setProductos(prodRes.data);
       setVentasReales(ventasRes.data);
 
+      // Generar notificaciones basadas en stock real
       const nuevasNotificaciones = prodRes.data
         .filter((p: any) => p.stock < 10)
         .map((p: any, index: number) => ({
           id: index,
           asunto: `¡Bajo Stock! - ${p.nombre}`,
-          cuerpo: `Atención: Quedan solo ${p.stock} unidades.`,
+          cuerpo: `Atención: Quedan solo ${p.stock} unidades en el inventario.`,
           leido: false,
-          fecha: "Alerta"
+          fecha: "Alerta del sistema"
         }));
       setNotificaciones(nuevasNotificaciones);
 
     } catch (error) {
       console.error("Error cargando datos:", error);
+      // Opcional: Swal.fire("Error", "No se pudieron cargar los datos", "error");
     }
   };
 
@@ -50,7 +55,10 @@ const VendedorDashboard: React.FC = () => {
     fetchData();
   }, []);
 
+  // --- FILTRAR PEDIDOS SEGÚN ESTADO DE LA BD ---
+  // Si el estado es null o "PENDIENTE", va a la izquierda (Por Enviar)
   const pedidosPendientes = ventasReales.filter(v => !v.estado || v.estado === "PENDIENTE");
+  // Si es "AGENDADO", va a la derecha (Agendados)
   const pedidosAgendados = ventasReales.filter(v => v.estado === "AGENDADO");
 
   const handleMarcarLeida = (id: number) => {
@@ -62,23 +70,30 @@ const VendedorDashboard: React.FC = () => {
     window.location.href = "/productos";
   };
 
+  // --- GUARDAR AGENDAMIENTO EN BD ---
   const handleSaveAgendamiento = async (datosAgendado: PedidoAgendado) => {
     try {
+      // Llamamos a tu endpoint PUT /api/ventas/{id}/agendar
       await api.put(`/ventas/${datosAgendado.id}/agendar`, {
         direccion: datosAgendado.direccion,
         fecha: datosAgendado.fechaEnvio
       });
-      Swal.fire("✅ Envío Agendado", "", "success");
+
+      Swal.fire("✅ Envío Agendado", "Se actualizó el estado en la base de datos.", "success");
       setAgendando(null);
-      fetchData();
+      fetchData(); // Recargar para ver el pedido moverse de lista
+
     } catch (error) {
       console.error(error);
-      Swal.fire("Error", "No se pudo agendar.", "error");
+      Swal.fire("Error", "No se pudo agendar el envío.", "error");
     }
   };
 
+  // Adaptador para abrir el modal con los datos de la venta real
   const abrirModalAgendar = (ventaReal: any) => {
+    // Intenta obtener el email del objeto usuario, o usa un fallback
     const emailCliente = ventaReal.usuario?.email || "Cliente";
+    
     setAgendando({
       id: ventaReal.id,
       productoNombre: ventaReal.producto?.nombre,
@@ -100,10 +115,8 @@ const VendedorDashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6 py-6">
         <div className="flex flex-wrap justify-center gap-3 mb-6">
           <button onClick={() => setTab("pedidos")} className={`px-5 py-2 rounded-lg transition ${tab === "pedidos" ? "bg-teal-600 text-white" : "bg-white hover:bg-gray-100 border"}`}>Gestión de Pedidos</button>
-          
-          {/* --- 👇 CAMBIO SOLO DE TEXTO AQUÍ --- */}
+          {/* Texto actualizado a "Inventario" como pediste */}
           <button onClick={() => setTab("productos")} className={`px-5 py-2 rounded-lg transition ${tab === "productos" ? "bg-teal-600 text-white" : "bg-white hover:bg-gray-100 border"}`}>Inventario</button>
-          {/* --- 👆 (Antes decía "Inventario (Todos)") --- */}
         </div>
 
         <motion.div key={tab} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
@@ -140,8 +153,8 @@ const VendedorDashboard: React.FC = () => {
                   {pedidosAgendados.map(v => (
                     <div key={v.id} className="p-4 border rounded-lg bg-green-50">
                       <p className="font-semibold">{v.producto?.nombre}</p>
-                      <p className="text-sm text-gray-700">Destino: {v.direccionEnvio}</p>
-                      <p className="text-sm text-gray-700">Fecha: {v.fechaEnvioProgramada}</p>
+                      <p className="text-sm text-gray-700">Destino: <strong>{v.direccionEnvio}</strong></p>
+                      <p className="text-sm text-gray-700">Fecha Prog.: {v.fechaEnvioProgramada}</p>
                     </div>
                   ))}
                 </div>
