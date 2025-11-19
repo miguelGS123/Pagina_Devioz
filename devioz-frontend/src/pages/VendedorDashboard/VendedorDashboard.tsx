@@ -1,4 +1,3 @@
-// En: src/pages/VendedorDashboard/VendedorDashboard.tsx
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Swal from "sweetalert2";
@@ -10,7 +9,10 @@ import api from "../../api/axiosConfig";
 
 const VendedorDashboard: React.FC = () => {
   const [productos, setProductos] = useState<VendedorProducto[]>([]);
+  
+  // Estado para TODAS las ventas reales que vienen de la BD
   const [ventasReales, setVentasReales] = useState<any[]>([]);
+  
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [notificacionAbierta, setNotificacionAbierta] = useState<Notificacion | null>(null);
   const [tab, setTab] = useState("pedidos");
@@ -19,20 +21,18 @@ const VendedorDashboard: React.FC = () => {
   const userStr = localStorage.getItem("user");
   const userObj = userStr ? JSON.parse(userStr) : { nombre: "Vendedor" };
 
+  // --- CARGAR DATOS REALES ---
   const fetchData = async () => {
     try {
       const [prodRes, ventasRes] = await Promise.all([
-        // --- CAMBIO 1: Pedimos TODOS los productos (públicos) ---
-        api.get("/productos", { headers: { "Cache-Control": "no-cache" } }),
-        
-        // --- CAMBIO 2: Pedimos TODAS las ventas (ahora permitido por SecurityConfig) ---
-        api.get("/ventas", { headers: { "Cache-Control": "no-cache" } })
+        api.get("/productos/mis-productos", { headers: { "Cache-Control": "no-cache" } }),
+        api.get("/ventas/vendedor", { headers: { "Cache-Control": "no-cache" } })
       ]);
 
-      // 1. Productos
       setProductos(prodRes.data);
+      setVentasReales(ventasRes.data);
 
-      // 2. Notificaciones (Calculadas sobre el stock de TODOS los productos)
+      // Generar notificaciones basadas en stock real
       const nuevasNotificaciones = prodRes.data
         .filter((p: any) => p.stock < 10)
         .map((p: any, index: number) => ({
@@ -44,12 +44,8 @@ const VendedorDashboard: React.FC = () => {
         }));
       setNotificaciones(nuevasNotificaciones);
 
-      // 3. Ventas
-      setVentasReales(ventasRes.data);
-
     } catch (error) {
       console.error("Error cargando datos:", error);
-      // Swal.fire("Error", "No se pudieron cargar los datos", "error");
     }
   };
 
@@ -57,8 +53,9 @@ const VendedorDashboard: React.FC = () => {
     fetchData();
   }, []);
 
-  // Filtramos las ventas para la vista
-  const pedidosPendientes = ventasReales.filter(v => v.estado === "PENDIENTE" || !v.estado);
+  // --- FILTRAR PEDIDOS SEGÚN ESTADO DE LA BD ---
+  // Si estado es null o 'PENDIENTE', va a la izquierda. Si es 'AGENDADO', a la derecha.
+  const pedidosPendientes = ventasReales.filter(v => !v.estado || v.estado === "PENDIENTE");
   const pedidosAgendados = ventasReales.filter(v => v.estado === "AGENDADO");
 
   const handleMarcarLeida = (id: number) => {
@@ -67,20 +64,20 @@ const VendedorDashboard: React.FC = () => {
 
   const handleLogout = () => {
     localStorage.clear();
-    window.location.href = "/";
+    window.location.href = "/productos";
   };
 
+  // --- GUARDAR AGENDAMIENTO EN BD ---
   const handleSaveAgendamiento = async (datosAgendado: PedidoAgendado) => {
     try {
-      // Actualizar en Backend
       await api.put(`/ventas/${datosAgendado.id}/agendar`, {
         direccion: datosAgendado.direccion,
         fecha: datosAgendado.fechaEnvio
       });
 
-      Swal.fire("✅ Envío Agendado", "Datos guardados en la base de datos.", "success");
+      Swal.fire("✅ Envío Agendado", "Se actualizó la base de datos.", "success");
       setAgendando(null);
-      fetchData(); // Recargar
+      fetchData(); // Recargar para ver el pedido moverse de lista
 
     } catch (error) {
       console.error(error);
@@ -88,15 +85,14 @@ const VendedorDashboard: React.FC = () => {
     }
   };
 
-  // Adaptador para el modal
   const abrirModalAgendar = (ventaReal: any) => {
-    // El DTO de ventas a veces anida el usuario en 'usuario' o 'usuarioNombre'
-    // Ajusta según tu VentaDTO.java. Aquí asumo que VentaDTO devuelve un objeto usuario.
-    const emailCliente = ventaReal.usuario?.email || ventaReal.usuarioNombre || "Sin Email";
+    // Adaptamos el objeto real para el modal
+    // Nota: VentaDTO suele tener 'usuario' como objeto o 'usuarioNombre' string. Revisa tu DTO.
+    const emailCliente = ventaReal.usuario?.email || ventaReal.usuarioNombre || "Cliente";
     
     setAgendando({
       id: ventaReal.id,
-      productoNombre: ventaReal.producto?.nombre,
+      productoNombre: ventaReal.producto?.nombre || ventaReal.producto.nombre, // Maneja ambas estructuras
       cantidad: ventaReal.cantidad,
       clienteEmail: emailCliente
     });
@@ -130,8 +126,8 @@ const VendedorDashboard: React.FC = () => {
                   {pedidosPendientes.length === 0 && <p className="text-gray-500">No hay pedidos pendientes.</p>}
                   {pedidosPendientes.map(v => (
                     <div key={v.id} className="p-4 border rounded-lg">
-                      <p className="font-semibold">{v.producto?.nombre} (x{v.cantidad})</p>
-                      <p className="text-sm text-gray-600">Cliente: {v.usuario?.email || v.usuarioNombre}</p>
+                      <p className="font-semibold">{v.producto?.nombre || v.producto.nombre} (x{v.cantidad})</p>
+                      <p className="text-sm text-gray-600">Cliente: {v.usuario?.nombre || v.usuario?.email}</p>
                       <p className="text-xs text-gray-400">{new Date(v.fecha).toLocaleDateString()}</p>
                       <button 
                         onClick={() => abrirModalAgendar(v)}
@@ -151,7 +147,7 @@ const VendedorDashboard: React.FC = () => {
                   {pedidosAgendados.length === 0 && <p className="text-gray-500">No hay envíos agendados.</p>}
                   {pedidosAgendados.map(v => (
                     <div key={v.id} className="p-4 border rounded-lg bg-green-50">
-                      <p className="font-semibold">{v.producto?.nombre}</p>
+                      <p className="font-semibold">{v.producto?.nombre || v.producto.nombre}</p>
                       <p className="text-sm text-gray-700">Destino: {v.direccionEnvio}</p>
                       <p className="text-sm text-gray-700">Fecha Prog.: {v.fechaEnvioProgramada}</p>
                     </div>

@@ -32,7 +32,7 @@ public class VentaController {
     private final UsuarioRepository usuarioRepository;
     private final ProductoRepository productoRepository;
     private final EmailService emailService;
-    
+
     @Autowired
     private VentaRepository ventaRepository;
 
@@ -48,48 +48,20 @@ public class VentaController {
         this.ventaRepository = ventaRepository;
     }
 
-    // 📌 Obtener todas las ventas (Para Admin y Vendedor)
-    // --- 👇 CAMBIO: Permitimos ADMIN y VENDEDOR ---
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')") 
-    @GetMapping
-    public List<VentaDTO> getAllVentas() {
-        return ventaService.getAllVentas()
-                .stream()
-                .map(VentaDTO::new)
-                .collect(Collectors.toList());
-    }
-    // --- 👆 ---
+    // ... (MANTÉN TUS MÉTODOS ANTIGUOS AQUÍ: getAllVentas, getMisVentas, crearVenta, deleteVenta) ...
+    // ... (Estoy resumiendo para no copiar código repetido, pero NO los borres) ...
 
-    // ... (El resto de métodos: getMisVentas, crearVenta, etc. se quedan IGUAL) ...
-    @GetMapping("/mis-ventas")
-    public ResponseEntity<?> getMisVentas(Authentication authentication) {
-        String email = authentication.getName();
-        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
-        if (usuarioOpt.isEmpty()) return ResponseEntity.badRequest().body("Usuario no encontrado");
-        List<VentaDTO> ventas = ventaService.getVentasByUsuarioId(usuarioOpt.get().getId())
-                .stream().map(VentaDTO::new).toList();
-        return ResponseEntity.ok(ventas);
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getVentaById(@PathVariable Long id) {
-        return ventaService.getVentaById(id)
-                .map(venta -> ResponseEntity.ok(new VentaDTO(venta)))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
+    // 📌 Crear una venta (Asegúrate de añadir el estado inicial)
     @PostMapping
-    public ResponseEntity<?> crearVenta(@RequestParam Long productoId, @RequestParam Integer cantidad, Authentication authentication) {
-        // (Tu lógica de crear venta existente... sin cambios)
+    public ResponseEntity<?> crearVenta(@RequestParam Long productoId,
+                                        @RequestParam Integer cantidad,
+                                        Authentication authentication) {
+        // ... (validaciones anteriores) ...
         String email = authentication.getName();
-        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
-        Optional<Producto> productoOpt = productoRepository.findById(productoId);
-        if (usuarioOpt.isEmpty() || productoOpt.isEmpty()) return ResponseEntity.badRequest().body("Datos incorrectos");
+        Usuario usuario = usuarioRepository.findByEmail(email).orElseThrow();
+        Producto producto = productoRepository.findById(productoId).orElseThrow();
 
-        Usuario usuario = usuarioOpt.get();
-        Producto producto = productoOpt.get();
-        if (producto.getStock() < cantidad) return ResponseEntity.badRequest().body("Stock insuficiente");
-
+        // ... (lógica de stock y precio) ...
         BigDecimal total = producto.getPrecio().multiply(BigDecimal.valueOf(cantidad));
         producto.setStock(producto.getStock() - cantidad);
         productoRepository.save(producto);
@@ -100,31 +72,28 @@ public class VentaController {
         venta.setCantidad(cantidad);
         venta.setTotal(total);
         venta.setFecha(LocalDateTime.now());
+        
+        // ✅ ESTADO INICIAL
         venta.setEstado("PENDIENTE");
 
         Venta savedVenta = ventaService.saveVenta(venta);
         CompletableFuture.runAsync(() -> emailService.enviarConfirmacionCompra(usuario, savedVenta));
+
         return ResponseEntity.ok(new VentaDTO(savedVenta));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteVenta(@PathVariable Long id, Authentication authentication) {
-        // (Tu lógica de borrar existente... sin cambios)
-        Optional<Venta> ventaOpt = ventaService.getVentaById(id);
-        if (ventaOpt.isEmpty()) return ResponseEntity.notFound().build();
-        // Solo borra si es dueño o Admin.
-        Venta venta = ventaOpt.get();
+    // ==========================================
+    // 👇 MÉTODOS NUEVOS PARA EL VENDEDOR 👇
+    // ==========================================
+
+    // 📌 Obtener ventas (pedidos) para el Vendedor autenticado
+    @GetMapping("/vendedor")
+    public List<Venta> getVentasVendedor(Authentication authentication) {
         String email = authentication.getName();
-        Usuario usuario = usuarioRepository.findByEmail(email).orElseThrow();
-        
-        if (!venta.getUsuario().getId().equals(usuario.getId()) && !"ROL_ADMIN".equals(usuario.getRol().name())) {
-            return ResponseEntity.status(403).body("No tienes permiso");
-        }
-        ventaService.deleteVenta(id);
-        return ResponseEntity.ok("Eliminado");
+        return ventaRepository.findVentasByVendedorEmail(email);
     }
 
-    // 📌 Agendar Envío (Esto lo usa el Vendedor)
+    // 📌 Agendar Envío (Actualizar estado de la venta)
     @PutMapping("/{id}/agendar")
     public ResponseEntity<?> agendarEnvio(@PathVariable Long id, @RequestBody Map<String, String> datos) {
         return ventaRepository.findById(id).map(venta -> {
