@@ -10,6 +10,7 @@ import com.devioz.backend.repository.VentaRepository;
 import com.devioz.backend.service.EmailService;
 import com.devioz.backend.service.VentaService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort; // <-- Importante para ordenar
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -48,21 +49,67 @@ public class VentaController {
         this.ventaRepository = ventaRepository;
     }
 
-    // ... (MANTÉN TUS MÉTODOS ANTIGUOS AQUÍ: getAllVentas, getMisVentas, crearVenta, deleteVenta) ...
-    // ... (Estoy resumiendo para no copiar código repetido, pero NO los borres) ...
+    // 📌 Obtener todas las ventas (Historial General - DTO)
+    @GetMapping
+    public List<VentaDTO> getAllVentas() {
+        return ventaService.getAllVentas()
+                .stream()
+                .map(VentaDTO::new)
+                .collect(Collectors.toList());
+    }
 
-    // 📌 Crear una venta (Asegúrate de añadir el estado inicial)
+    // 📌 Obtener ventas del usuario autenticado (Cliente: "Mis Compras")
+    @GetMapping("/mis-ventas")
+    public ResponseEntity<?> getMisVentas(Authentication authentication) {
+        String email = authentication.getName();
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
+
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("Usuario no encontrado");
+        }
+
+        List<VentaDTO> ventas = ventaService.getVentasByUsuarioId(usuarioOpt.get().getId())
+                                            .stream()
+                                            .map(VentaDTO::new)
+                                            .toList();
+
+        return ResponseEntity.ok(ventas);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getVentaById(@PathVariable Long id) {
+        return ventaService.getVentaById(id)
+                .map(venta -> ResponseEntity.ok(new VentaDTO(venta)))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     public ResponseEntity<?> crearVenta(@RequestParam Long productoId,
                                         @RequestParam Integer cantidad,
                                         Authentication authentication) {
-        // ... (validaciones anteriores) ...
-        String email = authentication.getName();
-        Usuario usuario = usuarioRepository.findByEmail(email).orElseThrow();
-        Producto producto = productoRepository.findById(productoId).orElseThrow();
 
-        // ... (lógica de stock y precio) ...
+        if (cantidad == null || cantidad <= 0) {
+            return ResponseEntity.badRequest().body("La cantidad debe ser mayor a 0");
+        }
+
+        String email = authentication.getName();
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
+        Optional<Producto> productoOpt = productoRepository.findById(productoId);
+
+        if (usuarioOpt.isEmpty() || productoOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("Usuario o Producto no encontrado");
+        }
+
+        Usuario usuario = usuarioOpt.get();
+        Producto producto = productoOpt.get();
+
+        if (producto.getStock() < cantidad) {
+            return ResponseEntity.badRequest()
+                    .body("Stock insuficiente.");
+        }
+
         BigDecimal total = producto.getPrecio().multiply(BigDecimal.valueOf(cantidad));
+
         producto.setStock(producto.getStock() - cantidad);
         productoRepository.save(producto);
 
@@ -72,28 +119,50 @@ public class VentaController {
         venta.setCantidad(cantidad);
         venta.setTotal(total);
         venta.setFecha(LocalDateTime.now());
-        
-        // ✅ ESTADO INICIAL
         venta.setEstado("PENDIENTE");
 
         Venta savedVenta = ventaService.saveVenta(venta);
-        CompletableFuture.runAsync(() -> emailService.enviarConfirmacionCompra(usuario, savedVenta));
+
+        CompletableFuture.runAsync(() -> {
+            emailService.enviarConfirmacionCompra(usuario, savedVenta);
+        });
 
         return ResponseEntity.ok(new VentaDTO(savedVenta));
     }
 
-    // ==========================================
-    // 👇 MÉTODOS NUEVOS PARA EL VENDEDOR 👇
-    // ==========================================
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteVenta(@PathVariable Long id, Authentication authentication) {
+        Optional<Venta> ventaOpt = ventaService.getVentaById(id);
 
-    // 📌 Obtener ventas (pedidos) para el Vendedor autenticado
-    @GetMapping("/vendedor")
-    public List<Venta> getVentasVendedor(Authentication authentication) {
+        if (ventaOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Venta venta = ventaOpt.get();
         String email = authentication.getName();
-        return ventaRepository.findVentasByVendedorEmail(email);
+        Usuario usuario = usuarioRepository.findByEmail(email).orElseThrow();
+        
+        if (!venta.getUsuario().getId().equals(usuario.getId()) && !"ROL_ADMIN".equals(usuario.getRol().name())) {
+            return ResponseEntity.status(403).body("No tienes permiso para eliminar esta venta");
+        }
+
+        ventaService.deleteVenta(id);
+        return ResponseEntity.ok("Venta eliminada correctamente");
     }
 
-    // 📌 Agendar Envío (Actualizar estado de la venta)
+    // ==========================================
+    // 👇 MÉTODOS PARA EL VENDEDOR (LOGÍSTICA) 👇
+    // ==========================================
+
+    // 📌 Obtener TODAS las ventas para gestión logística
+    // CAMBIO: Ya no filtra por email, devuelve TODO para que el vendedor gestione cualquier envío.
+    @GetMapping("/vendedor")
+    public List<Venta> getVentasVendedor(Authentication authentication) {
+        // Devolvemos todas las ventas ordenadas por fecha (más recientes primero)
+        return ventaRepository.findAll(Sort.by(Sort.Direction.DESC, "fecha"));
+    }
+
+    // 📌 Agendar Envío
     @PutMapping("/{id}/agendar")
     public ResponseEntity<?> agendarEnvio(@PathVariable Long id, @RequestBody Map<String, String> datos) {
         return ventaRepository.findById(id).map(venta -> {

@@ -9,10 +9,7 @@ import api from "../../api/axiosConfig";
 
 const VendedorDashboard: React.FC = () => {
   const [productos, setProductos] = useState<VendedorProducto[]>([]);
-  
-  // Estado para TODAS las ventas reales que vienen de la BD
   const [ventasReales, setVentasReales] = useState<any[]>([]);
-  
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [notificacionAbierta, setNotificacionAbierta] = useState<Notificacion | null>(null);
   const [tab, setTab] = useState("pedidos");
@@ -21,18 +18,18 @@ const VendedorDashboard: React.FC = () => {
   const userStr = localStorage.getItem("user");
   const userObj = userStr ? JSON.parse(userStr) : { nombre: "Vendedor" };
 
-  // --- CARGAR DATOS REALES ---
   const fetchData = async () => {
     try {
       const [prodRes, ventasRes] = await Promise.all([
-        api.get("/productos/mis-productos", { headers: { "Cache-Control": "no-cache" } }),
-        api.get("/ventas/vendedor", { headers: { "Cache-Control": "no-cache" } })
+        // Pedimos TODOS los productos (públicos)
+        api.get("/productos", { headers: { "Cache-Control": "no-cache" } }),
+        // Pedimos TODAS las ventas
+        api.get("/ventas", { headers: { "Cache-Control": "no-cache" } })
       ]);
 
       setProductos(prodRes.data);
       setVentasReales(ventasRes.data);
 
-      // Generar notificaciones basadas en stock real
       const nuevasNotificaciones = prodRes.data
         .filter((p: any) => p.stock < 10)
         .map((p: any, index: number) => ({
@@ -40,7 +37,7 @@ const VendedorDashboard: React.FC = () => {
           asunto: `¡Bajo Stock! - ${p.nombre}`,
           cuerpo: `Atención: Quedan solo ${p.stock} unidades.`,
           leido: false,
-          fecha: "Alerta del sistema"
+          fecha: "Alerta"
         }));
       setNotificaciones(nuevasNotificaciones);
 
@@ -53,8 +50,6 @@ const VendedorDashboard: React.FC = () => {
     fetchData();
   }, []);
 
-  // --- FILTRAR PEDIDOS SEGÚN ESTADO DE LA BD ---
-  // Si estado es null o 'PENDIENTE', va a la izquierda. Si es 'AGENDADO', a la derecha.
   const pedidosPendientes = ventasReales.filter(v => !v.estado || v.estado === "PENDIENTE");
   const pedidosAgendados = ventasReales.filter(v => v.estado === "AGENDADO");
 
@@ -67,18 +62,15 @@ const VendedorDashboard: React.FC = () => {
     window.location.href = "/productos";
   };
 
-  // --- GUARDAR AGENDAMIENTO EN BD ---
   const handleSaveAgendamiento = async (datosAgendado: PedidoAgendado) => {
     try {
       await api.put(`/ventas/${datosAgendado.id}/agendar`, {
         direccion: datosAgendado.direccion,
         fecha: datosAgendado.fechaEnvio
       });
-
-      Swal.fire("✅ Envío Agendado", "Se actualizó la base de datos.", "success");
+      Swal.fire("✅ Envío Agendado", "", "success");
       setAgendando(null);
-      fetchData(); // Recargar para ver el pedido moverse de lista
-
+      fetchData();
     } catch (error) {
       console.error(error);
       Swal.fire("Error", "No se pudo agendar.", "error");
@@ -86,13 +78,10 @@ const VendedorDashboard: React.FC = () => {
   };
 
   const abrirModalAgendar = (ventaReal: any) => {
-    // Adaptamos el objeto real para el modal
-    // Nota: VentaDTO suele tener 'usuario' como objeto o 'usuarioNombre' string. Revisa tu DTO.
-    const emailCliente = ventaReal.usuario?.email || ventaReal.usuarioNombre || "Cliente";
-    
+    const emailCliente = ventaReal.usuario?.email || "Cliente";
     setAgendando({
       id: ventaReal.id,
-      productoNombre: ventaReal.producto?.nombre || ventaReal.producto.nombre, // Maneja ambas estructuras
+      productoNombre: ventaReal.producto?.nombre,
       cantidad: ventaReal.cantidad,
       clienteEmail: emailCliente
     });
@@ -111,7 +100,10 @@ const VendedorDashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6 py-6">
         <div className="flex flex-wrap justify-center gap-3 mb-6">
           <button onClick={() => setTab("pedidos")} className={`px-5 py-2 rounded-lg transition ${tab === "pedidos" ? "bg-teal-600 text-white" : "bg-white hover:bg-gray-100 border"}`}>Gestión de Pedidos</button>
-          <button onClick={() => setTab("productos")} className={`px-5 py-2 rounded-lg transition ${tab === "productos" ? "bg-teal-600 text-white" : "bg-white hover:bg-gray-100 border"}`}>Mis Productos</button>
+          
+          {/* --- 👇 CAMBIO SOLO DE TEXTO AQUÍ --- */}
+          <button onClick={() => setTab("productos")} className={`px-5 py-2 rounded-lg transition ${tab === "productos" ? "bg-teal-600 text-white" : "bg-white hover:bg-gray-100 border"}`}>Inventario</button>
+          {/* --- 👆 (Antes decía "Inventario (Todos)") --- */}
         </div>
 
         <motion.div key={tab} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
@@ -126,8 +118,8 @@ const VendedorDashboard: React.FC = () => {
                   {pedidosPendientes.length === 0 && <p className="text-gray-500">No hay pedidos pendientes.</p>}
                   {pedidosPendientes.map(v => (
                     <div key={v.id} className="p-4 border rounded-lg">
-                      <p className="font-semibold">{v.producto?.nombre || v.producto.nombre} (x{v.cantidad})</p>
-                      <p className="text-sm text-gray-600">Cliente: {v.usuario?.nombre || v.usuario?.email}</p>
+                      <p className="font-semibold">{v.producto?.nombre} (x{v.cantidad})</p>
+                      <p className="text-sm text-gray-600">Cliente: {v.usuario?.email}</p>
                       <p className="text-xs text-gray-400">{new Date(v.fecha).toLocaleDateString()}</p>
                       <button 
                         onClick={() => abrirModalAgendar(v)}
@@ -147,9 +139,9 @@ const VendedorDashboard: React.FC = () => {
                   {pedidosAgendados.length === 0 && <p className="text-gray-500">No hay envíos agendados.</p>}
                   {pedidosAgendados.map(v => (
                     <div key={v.id} className="p-4 border rounded-lg bg-green-50">
-                      <p className="font-semibold">{v.producto?.nombre || v.producto.nombre}</p>
+                      <p className="font-semibold">{v.producto?.nombre}</p>
                       <p className="text-sm text-gray-700">Destino: {v.direccionEnvio}</p>
-                      <p className="text-sm text-gray-700">Fecha Prog.: {v.fechaEnvioProgramada}</p>
+                      <p className="text-sm text-gray-700">Fecha: {v.fechaEnvioProgramada}</p>
                     </div>
                   ))}
                 </div>

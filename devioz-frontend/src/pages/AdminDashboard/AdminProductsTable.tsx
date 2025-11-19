@@ -1,7 +1,6 @@
-// En: src/pages/AdminDashboard/AdminProductsTable.tsx
-import React, { useState } from "react"; // Ya no se necesita 'useEffect'
+import React, { useState } from "react";
 import api from "../../api/axiosConfig";
-import Swal, { SweetAlertResult } from "sweetalert2"; // <-- 1. Importa SweetAlertResult
+import Swal, { SweetAlertResult } from "sweetalert2";
 import { AxiosResponse } from "axios";
 
 interface Producto {
@@ -14,21 +13,16 @@ interface Producto {
   imagen?: string;
 }
 
-// --- 2. 'setProductos' añadido a las Props ---
 interface Props {
   productos: Producto[];
   setProductos: React.Dispatch<React.SetStateAction<Producto[]>>;
 }
 
-// --- 3. Recibe 'setProductos' ---
 const AdminProductsTable: React.FC<Props> = ({ productos, setProductos }) => {
-  // --- 4. Estado local 'items' ELIMINADO ---
   const [editing, setEditing] = useState<Producto | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // 🗑️ Eliminar producto
   const handleDelete = async (id: number) => {
-    // --- 5. Tipo añadido a 'confirm' ---
     const confirm: SweetAlertResult = await Swal.fire({
       title: "¿Eliminar producto?",
       text: "Esta acción no se puede deshacer.",
@@ -44,8 +38,7 @@ const AdminProductsTable: React.FC<Props> = ({ productos, setProductos }) => {
 
     try {
       setLoading(true);
-      await api.delete(`/productos/${id}`); // Usa la ruta API correcta
-      // --- 6. Usa 'setProductos' (del padre) ---
+      await api.delete(`/productos/${id}`);
       setProductos((prev) => prev.filter((p) => p.id !== id));
       Swal.fire("Eliminado", "El producto fue eliminado correctamente.", "success");
     } catch (error: any) {
@@ -56,7 +49,6 @@ const AdminProductsTable: React.FC<Props> = ({ productos, setProductos }) => {
     }
   };
 
-  // 💾 Crear o actualizar producto
   const handleSave = async (prod: Producto) => {
     try {
       if (!prod.nombre || prod.precio <= 0 || prod.stock < 0) {
@@ -68,36 +60,22 @@ const AdminProductsTable: React.FC<Props> = ({ productos, setProductos }) => {
       let response: AxiosResponse<Producto>;
 
       if (prod.id) {
-        response = await api.put(`/productos/${prod.id}`, prod); // Usa la ruta API correcta
-        // --- 7. Usa 'setProductos' (del padre) ---
+        response = await api.put(`/productos/${prod.id}`, prod);
         setProductos((prev) =>
           prev.map((p) => (p.id === prod.id ? response.data : p))
         );
-        Swal.fire(
-          "✅ Actualizado",
-          "El producto fue actualizado correctamente.",
-          "success"
-        );
+        Swal.fire("✅ Actualizado", "Producto actualizado.", "success");
       } else {
         const { id, ...nuevoProducto } = prod;
-        response = await api.post(`/productos`, nuevoProducto); // Usa la ruta API correcta
-        // --- 8. Usa 'setProductos' (del padre) ---
+        response = await api.post(`/productos`, nuevoProducto);
         setProductos((prev) => [...prev, response.data]);
-        Swal.fire(
-          "✅ Creado",
-          "El producto fue agregado correctamente.",
-          "success"
-        );
+        Swal.fire("✅ Creado", "Producto creado.", "success");
       }
 
       setEditing(null);
     } catch (error: any) {
       console.error("❌ Error al guardar producto:", error);
-      const message =
-        error.response?.status === 403
-          ? "Acceso denegado. Tu rol no tiene permisos para esta acción."
-          : error.response?.data?.message || "Error al guardar el producto.";
-      Swal.fire("Error", message, "error");
+      Swal.fire("Error", "Error al guardar el producto.", "error");
     } finally {
       setLoading(false);
     }
@@ -111,7 +89,7 @@ const AdminProductsTable: React.FC<Props> = ({ productos, setProductos }) => {
       descripcion: "",
       precio: 0,
       stock: 0,
-      categoria: "",
+      categoria: "Laptops", // Valor por defecto
       imagen: "",
     });
 
@@ -148,7 +126,6 @@ const AdminProductsTable: React.FC<Props> = ({ productos, setProductos }) => {
           </tr>
         </thead>
         <tbody>
-          {/* --- 9. Mapea sobre 'productos' (de las props) --- */}
           {productos.map((p) => (
             <tr key={p.id} className="border-b hover:bg-gray-50 transition">
               <td className="p-2 font-medium">{p.nombre}</td>
@@ -174,7 +151,6 @@ const AdminProductsTable: React.FC<Props> = ({ productos, setProductos }) => {
         </tbody>
       </table>
 
-      {/* Modal de creación / edición */}
       {editing && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-96 shadow-2xl">
@@ -182,97 +158,52 @@ const AdminProductsTable: React.FC<Props> = ({ productos, setProductos }) => {
               {editing.id ? "Editar producto" : "Nuevo producto"}
             </h3>
 
-            {/* Nombre */}
             <input
-              type="text"
-              placeholder="Nombre"
-              value={editing.nombre}
+              type="text" placeholder="Nombre" value={editing.nombre}
               onChange={(e) => setEditing({ ...editing, nombre: e.target.value })}
               className="w-full border border-gray-300 px-3 py-2 mb-3 rounded focus:ring-2 focus:ring-teal-500"
             />
-
-            {/* Descripción */}
             <textarea
-              placeholder="Descripción"
-              value={editing.descripcion}
-              onChange={(e) =>
-                setEditing({ ...editing, descripcion: e.target.value })
-              }
+              placeholder="Descripción" value={editing.descripcion}
+              onChange={(e) => setEditing({ ...editing, descripcion: e.target.value })}
               className="w-full border border-gray-300 px-3 py-2 mb-3 rounded focus:ring-2 focus:ring-teal-500"
             />
 
-            {/* Categoría */}
+            {/* --- 👇 CATEGORÍAS ACTUALIZADAS --- */}
             <select
               value={editing.categoria || ""}
-              onChange={(e) =>
-                setEditing({ ...editing, categoria: e.target.value })
-              }
+              onChange={(e) => setEditing({ ...editing, categoria: e.target.value })}
               className="w-full border border-gray-300 px-3 py-2 mb-3 rounded focus:ring-2 focus:ring-teal-500 bg-white"
             >
-              <option value="">Selecciona una categoría</option>
               <option value="Laptops">Laptops</option>
               <option value="Celulares">Celulares</option>
+              <option value="Teclados">Teclados</option>
+              <option value="Mouse">Mouse</option>
+              <option value="Monitores">Monitores</option>
               <option value="Accesorios">Accesorios</option>
               <option value="Audio">Audio</option>
-              <option value="Periféricos">Periféricos</option>
               <option value="Otros">Otros</option>
             </select>
+            {/* --- 👆 FIN ACTUALIZACIÓN --- */}
 
-            {/* Imagen */}
             <input
-              type="file"
-              accept="image/*"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-
-                const formData = new FormData();
-                formData.append("file", file);
-
-                try {
-                  const res = await api.post("/productos/upload", formData, {
-                    headers: { "Content-Type": "multipart/form-data" },
-                  });
-                  setEditing({ ...editing, imagen: res.data });
-                  Swal.fire(
-                    "✅ Imagen subida",
-                    "La imagen fue cargada correctamente",
-                    "success"
-                  );
-                } catch {
-                  Swal.fire("❌ Error", "No se pudo subir la imagen", "error");
-                }
-              }}
+              type="text" placeholder="URL de Imagen" value={editing.imagen || ""}
+              onChange={(e) => setEditing({ ...editing, imagen: e.target.value })}
               className="w-full border border-gray-300 px-3 py-2 mb-3 rounded focus:ring-2 focus:ring-teal-500"
             />
-
-            {/* Precio */}
-            <input
-              type="number"
-              placeholder="Precio"
-              value={editing.precio}
-              onChange={(e) =>
-                setEditing({
-                  ...editing,
-                  precio: parseFloat(e.target.value) || 0,
-                })
-              }
-              className="w-full border border-gray-300 px-3 py-2 mb-3 rounded focus:ring-2 focus:ring-teal-500"
-            />
-
-            {/* Stock */}
-            <input
-              type="number"
-              placeholder="Stock"
-              value={editing.stock}
-              onChange={(e) =>
-                setEditing({
-                  ...editing,
-                  stock: parseInt(e.target.value) || 0,
-                })
-              }
-              className="w-full border border-gray-300 px-3 py-2 mb-4 rounded focus:ring-2 focus:ring-teal-500"
-            />
+            
+            <div className="flex gap-2 mb-3">
+                <input
+                type="number" placeholder="Precio" value={editing.precio}
+                onChange={(e) => setEditing({ ...editing, precio: parseFloat(e.target.value) || 0 })}
+                className="w-1/2 border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-teal-500"
+                />
+                <input
+                type="number" placeholder="Stock" value={editing.stock}
+                onChange={(e) => setEditing({ ...editing, stock: parseInt(e.target.value) || 0 })}
+                className="w-1/2 border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-teal-500"
+                />
+            </div>
 
             <div className="flex justify-between mt-2">
               <button
