@@ -17,8 +17,11 @@ const AdminSalesDashboard: React.FC<Props> = ({ ventas }) => {
   // 🧮 Filtrar ventas según producto y fecha
   const ventasFiltradas = useMemo(() => {
     return ventas.filter((v) => {
+      // CORRECCIÓN: Usamos ?. para evitar error si producto es null
+      const nombreProducto = v.producto?.nombre || "Producto Eliminado";
+      
       const matchProducto =
-        selectedProduct === "Todos" || v.producto.nombre === selectedProduct;
+        selectedProduct === "Todos" || nombreProducto === selectedProduct;
       const matchFecha =
         !selectedDate || v.fecha.startsWith(selectedDate); // formato yyyy-mm-dd
       return matchProducto && matchFecha;
@@ -29,7 +32,8 @@ const AdminSalesDashboard: React.FC<Props> = ({ ventas }) => {
   const ventasPorProducto = useMemo(() => {
     const map = new Map<string, number>();
     ventasFiltradas.forEach((v) => {
-      const nombre = v.producto.nombre;
+      // CORRECCIÓN: Manejo seguro de nulos
+      const nombre = v.producto?.nombre || "Producto Eliminado";
       map.set(nombre, (map.get(nombre) || 0) + v.total);
     });
     return Array.from(map, ([name, total]) => ({ name, total }));
@@ -38,7 +42,8 @@ const AdminSalesDashboard: React.FC<Props> = ({ ventas }) => {
   const ventasPorCategoria = useMemo(() => {
     const map = new Map<string, number>();
     ventasFiltradas.forEach((v) => {
-      const categoria = v.producto.categoria || "Sin categoría";
+      // CORRECCIÓN: Manejo seguro de nulos
+      const categoria = v.producto?.categoria || "Sin categoría";
       map.set(categoria, (map.get(categoria) || 0) + v.total);
     });
     return Array.from(map, ([name, total]) => ({ name, total }));
@@ -68,9 +73,12 @@ const AdminSalesDashboard: React.FC<Props> = ({ ventas }) => {
   // 📦 KPIs
   const totalVentas = ventasFiltradas.reduce((a, b) => a + b.total, 0);
   const totalProductos = ventasFiltradas.reduce((a, b) => a + b.cantidad, 0);
+  
+  // CORRECCIÓN: Manejo seguro de nulos en el map
   const productosUnicos = new Set(
-    ventasFiltradas.map((v) => v.producto.nombre)
+    ventasFiltradas.map((v) => v.producto?.nombre || "Producto Eliminado")
   ).size;
+  
   const masVendido =
     ventasPorProducto.sort((a, b) => b.total - a.total)[0]?.name || "—";
 
@@ -115,7 +123,8 @@ const AdminSalesDashboard: React.FC<Props> = ({ ventas }) => {
           className="border px-3 py-2 rounded-lg text-sm"
         >
           <option>Todos</option>
-          {Array.from(new Set(ventas.map((v) => v.producto.nombre))).map(
+          {/* CORRECCIÓN: Manejo seguro de nulos al generar opciones */}
+          {Array.from(new Set(ventas.map((v) => v.producto?.nombre || "Producto Eliminado"))).map(
             (nombre) => (
               <option key={nombre}>{nombre}</option>
             )
@@ -128,7 +137,8 @@ const AdminSalesDashboard: React.FC<Props> = ({ ventas }) => {
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
           className="border px-3 py-2 rounded-lg text-sm"
-        />
+        >
+        </input>
 
         {/* Botón para limpiar */}
         <button

@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "ventas_devioz") // Asegúrate que coincida con tu BD en Hostinger
+@Table(name = "ventas_devioz")
 public class Venta {
 
     @Id
@@ -29,41 +29,41 @@ public class Venta {
     @Column(nullable = false)
     private LocalDateTime fecha = LocalDateTime.now();
 
-    // --- 👇 NUEVOS CAMPOS PARA LOGÍSTICA (Se crearán en MySQL) ---
+    // --- NUEVOS CAMPOS DE LOGÍSTICA ---
     
     @Column(length = 20)
-    private String estado = "PENDIENTE"; // Valores: "PENDIENTE", "AGENDADO"
+    private String estado = "PENDIENTE"; // "PENDIENTE" o "AGENDADO"
 
-    private String direccionEnvio; // Estación o dirección
+    private String direccionEnvio; 
     
-    private String fechaEnvioProgramada; // Fecha elegida por el vendedor
+    private String fechaEnvioProgramada;
 
-    // --- Getters y Setters ---
+    // --- GETTERS Y SETTERS COMPLETOS ---
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-    
+
     public Usuario getUsuario() { return usuario; }
     public void setUsuario(Usuario usuario) { this.usuario = usuario; }
-    
+
     public Producto getProducto() { return producto; }
     public void setProducto(Producto producto) { this.producto = producto; }
-    
+
     public Integer getCantidad() { return cantidad; }
     public void setCantidad(Integer cantidad) { this.cantidad = cantidad; }
-    
+
     public BigDecimal getTotal() { return total; }
     public void setTotal(BigDecimal total) { this.total = total; }
-    
+
     public LocalDateTime getFecha() { return fecha; }
     public void setFecha(LocalDateTime fecha) { this.fecha = fecha; }
-    
-    // Nuevos Getters/Setters
+
     public String getEstado() { return estado; }
     public void setEstado(String estado) { this.estado = estado; }
-    
+
     public String getDireccionEnvio() { return direccionEnvio; }
     public void setDireccionEnvio(String direccionEnvio) { this.direccionEnvio = direccionEnvio; }
-    
+
     public String getFechaEnvioProgramada() { return fechaEnvioProgramada; }
     public void setFechaEnvioProgramada(String fechaEnvioProgramada) { this.fechaEnvioProgramada = fechaEnvioProgramada; }
 }

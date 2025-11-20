@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface VentaRepository extends JpaRepository<Venta, Long> {
 
-    // Tus métodos existentes para Admin/Usuario...
+    // Métodos existentes (Admin / Usuario)
     List<Venta> findByUsuarioIdOrderByFechaDesc(Long usuarioId);
     
     @Query("SELECT v FROM Venta v LEFT JOIN FETCH v.usuario u LEFT JOIN FETCH v.producto p ORDER BY v.fecha DESC")
@@ -17,7 +17,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     @Query("SELECT v FROM Venta v LEFT JOIN FETCH v.usuario u LEFT JOIN FETCH v.producto p WHERE u.id = :usuarioId ORDER BY v.fecha DESC")
     List<Venta> findByUsuarioIdWithDetails(@Param("usuarioId") Long usuarioId);
 
-    // --- 👇 NUEVO: Buscar ventas donde el producto pertenece al vendedor ---
+    // --- NUEVO: Buscar ventas de los productos de un vendedor específico ---
     @Query("SELECT v FROM Venta v " +
            "JOIN FETCH v.producto p " +
            "JOIN FETCH v.usuario u " +

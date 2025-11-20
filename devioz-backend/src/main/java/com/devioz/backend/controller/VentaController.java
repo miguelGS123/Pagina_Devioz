@@ -10,9 +10,8 @@ import com.devioz.backend.repository.VentaRepository;
 import com.devioz.backend.service.EmailService;
 import com.devioz.backend.service.VentaService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort; // <-- Importante para ordenar
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -49,7 +48,7 @@ public class VentaController {
         this.ventaRepository = ventaRepository;
     }
 
-    // 📌 Obtener todas las ventas (Historial General - DTO)
+    // 📌 Obtener todas las ventas (Historial General - Admin/Vendedor Logística)
     @GetMapping
     public List<VentaDTO> getAllVentas() {
         return ventaService.getAllVentas()
@@ -76,6 +75,7 @@ public class VentaController {
         return ResponseEntity.ok(ventas);
     }
 
+    // 📌 Obtener una venta por ID
     @GetMapping("/{id}")
     public ResponseEntity<?> getVentaById(@PathVariable Long id) {
         return ventaService.getVentaById(id)
@@ -83,6 +83,7 @@ public class VentaController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // 📌 Crear una venta (Cliente compra)
     @PostMapping
     public ResponseEntity<?> crearVenta(@RequestParam Long productoId,
                                         @RequestParam Integer cantidad,
@@ -119,7 +120,7 @@ public class VentaController {
         venta.setCantidad(cantidad);
         venta.setTotal(total);
         venta.setFecha(LocalDateTime.now());
-        venta.setEstado("PENDIENTE");
+        venta.setEstado("PENDIENTE"); // Estado inicial
 
         Venta savedVenta = ventaService.saveVenta(venta);
 
@@ -130,6 +131,7 @@ public class VentaController {
         return ResponseEntity.ok(new VentaDTO(savedVenta));
     }
 
+    // 📌 Eliminar venta (Solo Admin o Dueño - lógica en servicio)
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteVenta(@PathVariable Long id, Authentication authentication) {
         Optional<Venta> ventaOpt = ventaService.getVentaById(id);
@@ -151,18 +153,16 @@ public class VentaController {
     }
 
     // ==========================================
-    // 👇 MÉTODOS PARA EL VENDEDOR (LOGÍSTICA) 👇
+    // 👇 MÉTODOS DE LOGÍSTICA VENDEDOR 👇
     // ==========================================
 
-    // 📌 Obtener TODAS las ventas para gestión logística
-    // CAMBIO: Ya no filtra por email, devuelve TODO para que el vendedor gestione cualquier envío.
+    // 📌 Obtener TODAS las ventas para gestión (Vendedor Logístico)
     @GetMapping("/vendedor")
     public List<Venta> getVentasVendedor(Authentication authentication) {
-        // Devolvemos todas las ventas ordenadas por fecha (más recientes primero)
         return ventaRepository.findAll(Sort.by(Sort.Direction.DESC, "fecha"));
     }
 
-    // 📌 Agendar Envío
+    // 📌 Agendar Envío (Actualizar estado de la venta)
     @PutMapping("/{id}/agendar")
     public ResponseEntity<?> agendarEnvio(@PathVariable Long id, @RequestBody Map<String, String> datos) {
         return ventaRepository.findById(id).map(venta -> {

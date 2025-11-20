@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./devioz-backend
+    container_name: devioz-backend
+    ports:
+      - "8008:8008"
+    volumes:
+      - ./devioz-backend/uploads:/app/uploads
+    restart: always
+
+  frontend:
+    build: ./devioz-frontend
+    container_name: devioz-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: always

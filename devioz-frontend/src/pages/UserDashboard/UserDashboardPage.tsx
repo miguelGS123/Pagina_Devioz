@@ -12,7 +12,7 @@ import DashboardHeader from "./DashboardHeader";
 import DashboardFilters from "./DashboardFilters";
 import DashboardProducts from "./DashboardProducts";
 import UserProfileModal from "./UserProfileModal";
-import HistorialModal from "./HistorialModal"; // <-- Importa el nuevo modal
+import HistorialModal from "./HistorialModal"; 
 
 interface Usuario {
   id: number;
@@ -39,7 +39,7 @@ const UserDashboardPage: React.FC = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [perfilOpen, setPerfilOpen] = useState(false);
-  const [historialOpen, setHistorialOpen] = useState(false); // <-- Estado que abre el modal
+  const [historialOpen, setHistorialOpen] = useState(false);
 
   // Filtros
   const [search, setSearch] = useState("");
@@ -154,9 +154,12 @@ const UserDashboardPage: React.FC = () => {
     }
   };
 
-  // --- Calcular total ---
+  // --- Calcular total (CORREGIDO) ---
   useEffect(() => {
-    setTotal(cartItems.reduce((a, b) => a + b.product.precio * b.qty, 0));
+    const nuevoTotal = cartItems.reduce((acumulador, item) => {
+      return acumulador + (item.product.precio * item.qty);
+    }, 0);
+    setTotal(nuevoTotal);
   }, [cartItems]);
 
   const handleLogout = () => {
@@ -171,8 +174,9 @@ const UserDashboardPage: React.FC = () => {
     );
     if (categoria !== "Todos")
       list = list.filter((p) => p.categoria === categoria);
+    
     if (orden === "precio-asc") list.sort((a, b) => a.precio - b.precio);
-    if (orden === "precio-desc") list.sort((a, b) => b.precio - b.precio);
+    if (orden === "precio-desc") list.sort((a, b) => b.precio - a.precio);
     return list;
   }, [productos, search, categoria, orden]);
 
@@ -183,16 +187,15 @@ const UserDashboardPage: React.FC = () => {
       <DashboardHeader
         user={user}
         cartItems={cartItems}
-        isHistorialOpen={historialOpen}
+        // isHistorialOpen={historialOpen} // <-- ❌ ELIMINADO
         onCartClick={() => setCartOpen(true)}
         onPerfilClick={() => setPerfilOpen(true)}
-        onHistorialClick={() => setHistorialOpen(true)} // <-- ABRE EL MODAL
+        onHistorialClick={() => setHistorialOpen(true)}
         onLogout={handleLogout}
         menuOpen={menuOpen}
         setMenuOpen={setMenuOpen}
       />
 
-      {/* MUESTRA SIEMPRE LOS PRODUCTOS Y FILTROS */}
       <motion.div
         key="productos"
         initial={{ opacity: 0 }}
@@ -209,7 +212,6 @@ const UserDashboardPage: React.FC = () => {
         <DashboardProducts productos={filtered} onAddToCart={handleAddToCart} />
       </motion.div>
 
-      {/* 🛒 Sidebar Carrito */}
       <CartSidebar
         open={cartOpen}
         onClose={() => setCartOpen(false)}
@@ -222,7 +224,6 @@ const UserDashboardPage: React.FC = () => {
         onCheckout={handleCheckout}
       />
 
-      {/* 👤 Modal Perfil */}
       {perfilOpen && (
         <UserProfileModal
           user={user}
@@ -231,7 +232,6 @@ const UserDashboardPage: React.FC = () => {
         />
       )}
 
-      {/* 🧾 MODAL DE HISTORIAL (EN LUGAR DE LA SECCIÓN DE ABAJO) */}
       {historialOpen && (
         <HistorialModal
           ventas={ventas}

@@ -4,20 +4,16 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // 📂 Definimos la carpeta de uploads
-        Path uploadDir = Paths.get("uploads");
-        String uploadPath = uploadDir.toFile().getAbsolutePath();
-
-        // 🧭 Mapeamos la URL /uploads/** al sistema de archivos
+        // LÓGICA: Mapeamos la URL "/uploads/nombre-imagen.png"
+        // directamente a la carpeta interna del contenedor "/app/uploads/nombre-imagen.png".
+        // El "file:" indica que es una ruta del sistema de archivos, no del classpath.
+        // La barra "/" al final es OBLIGATORIA.
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:" + uploadPath + "/");
+                .addResourceLocations("file:/app/uploads/");
     }
 }
