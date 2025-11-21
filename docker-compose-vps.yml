@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./devioz-backend
+    container_name: devioz-backend
+    ports:
+      - "8008:8008"
+    volumes:
+      # Persistencia de imágenes
+      - ./devioz_data/uploads:/app/uploads
+    restart: always

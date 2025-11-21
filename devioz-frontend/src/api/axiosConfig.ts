@@ -1,7 +1,8 @@
 import axios from "axios";
 
+// ⚠️ CAMBIO CRÍTICO: Apuntamos al Backend que está corriendo en el VPS (Elastika)
 const api = axios.create({
-  baseURL: "http://localhost:8008/api",
+  baseURL: "http://38.250.161.108:8008/api", 
   headers: {
     "Content-Type": "application/json",
   },
