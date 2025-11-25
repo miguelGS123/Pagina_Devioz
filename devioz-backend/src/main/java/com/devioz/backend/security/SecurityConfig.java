@@ -5,8 +5,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.core.GrantedAuthorityDefaults;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -71,48 +71,38 @@ public class SecurityConfig {
                 .requestMatchers("/api/formulario/**").permitAll()
                 .requestMatchers("/api/chat/**").permitAll()
                 .requestMatchers("/api/hello").permitAll()
-                // Permite ver las imágenes sin token:
                 .requestMatchers("/uploads/**").permitAll() 
-                // Permite ver errores 404/500 sin ser redirigido a login (CRÍTICO para depurar):
                 .requestMatchers("/error").permitAll()
 
                 // === ZONA DE PRODUCTOS ===
-                // "Mis Productos" requiere ROL explícito antes de la regla general GET
                 .requestMatchers("/api/productos/mis-productos").hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
-                // Ver productos es público
                 .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
-                // Gestión de productos
                 .requestMatchers(HttpMethod.POST, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
                 .requestMatchers(HttpMethod.PUT, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
                 .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasAuthority("ROL_ADMIN")
                 
                 // === ZONA DE USUARIOS ===
+                // Permite al ADMIN CREAR USUARIOS (Vendedores/Clientes/etc.) - Requerido para la tarea
+                .requestMatchers(HttpMethod.POST, "/api/usuarios").hasAuthority("ROL_ADMIN") // <-- ESTA LÍNEA ES EL PERMISO
+                
                 // Ver perfil propio (cualquier autenticado)
-                .requestMatchers(HttpMethod.GET, "/api/usuarios/**").authenticated()
-                // Gestión de usuarios (SOLO ADMIN)
-                .requestMatchers(HttpMethod.POST, "/api/usuarios").hasAuthority("ROL_ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/usuarios/**").authenticated() 
+                // Gestión de usuarios
                 .requestMatchers(HttpMethod.PUT, "/api/usuarios/**").hasAuthority("ROL_ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/usuarios/**").hasAuthority("ROL_ADMIN")
 
                 // === ZONA DE VENTAS ===
-                // Cliente ve lo suyo
+                .requestMatchers(HttpMethod.POST, "/api/ventas/crear-checkout").hasAuthority("ROL_USUARIO") // Nuevo Checkout
                 .requestMatchers("/api/ventas/mis-ventas").hasAuthority("ROL_USUARIO")
-                // Vendedor ve pedidos entrantes
                 .requestMatchers("/api/ventas/vendedor").hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
-                // Logística (Agendar envío)
                 .requestMatchers("/api/ventas/*/agendar").hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
-                // Ver listado general
                 .requestMatchers(HttpMethod.GET, "/api/ventas").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
-                // Crear venta (Comprar)
                 .requestMatchers(HttpMethod.POST, "/api/ventas/**").hasAuthority("ROL_USUARIO")
-                // Borrar historial
                 .requestMatchers(HttpMethod.DELETE, "/api/ventas/**").hasAnyAuthority("ROL_ADMIN", "ROL_USUARIO")
 
                 // === CANDADO FINAL ===
-                // Cualquier otra ruta no listada requiere autenticación
                 .anyRequest().authenticated()
             )
-            // Añadimos tu filtro JWT antes del filtro estándar
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         // Esto hace que Spring busque "ROL_ADMIN" en vez de "ROLE_ROL_ADMIN"

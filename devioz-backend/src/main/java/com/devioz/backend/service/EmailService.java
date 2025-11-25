@@ -1,5 +1,7 @@
 package com.devioz.backend.service;
 
+import com.devioz.backend.dto.VentaRequestDTO; // <-- NUEVA IMPORTACIÓN
+import com.devioz.backend.dto.VentaRequestDTO.ItemVentaRequestDTO; // <-- NUEVA IMPORTACIÓN
 import com.devioz.backend.model.FormularioDevioz;
 import com.devioz.backend.model.Usuario;
 import com.devioz.backend.model.Venta;
@@ -11,7 +13,10 @@ import org.springframework.stereotype.Service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import java.math.BigDecimal; // <-- NUEVA IMPORTACIÓN
 import java.time.format.DateTimeFormatter;
+import java.util.List; // <-- NUEVA IMPORTACIÓN
+import java.util.concurrent.atomic.AtomicReference; // <-- NUEVA IMPORTACIÓN (para cálculo)
 
 @Service
 public class EmailService {
@@ -22,9 +27,10 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
-    // 📩 Correo de confirmación para el usuario (Formulario contacto)
+    // 📩 Correo de confirmación para el usuario (Formulario contacto) - MANTENIDO
     @Async
     public void enviarCorreoConfirmacion(FormularioDevioz formulario) {
+        // CÓDIGO MANTENIDO (sin cambios)
         try {
             MimeMessage mensaje = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, true);
@@ -54,9 +60,10 @@ public class EmailService {
         }
     }
 
-    // 📩 Notificación al admin (Formulario contacto) - ✅ MANTENIDO
+    // 📩 Notificación al admin (Formulario contacto) - MANTENIDO
     @Async
     public void notificarAdmin(FormularioDevioz formulario) {
+        // CÓDIGO MANTENIDO (sin cambios)
         try {
             MimeMessage mensaje = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, true);
@@ -87,9 +94,12 @@ public class EmailService {
         }
     }
 
-    // CONFIRMACIÓN DE COMPRA - Solo correo al usuario
+    // =================================================================================
+    // 📌 MÉTODO 1: CONFIRMACIÓN DE COMPRA (COMPRA DE ÍTEM INDIVIDUAL) - MANTENIDO
+    // =================================================================================
     @Async
     public void enviarConfirmacionCompra(Usuario usuario, Venta venta) {
+        // CÓDIGO MANTENIDO (Funciona para el endpoint antiguo de una sola venta)
         try {
             MimeMessage mensaje = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, true);
@@ -114,13 +124,13 @@ public class EmailService {
                 <p>Tu pedido será procesado y enviado en un plazo de 24-48 horas.</p>
                 <p>Si tienes alguna pregunta, responde a este correo.</p>
                 """.formatted(
-                    usuario.getNombre(),
-                    venta.getProducto().getNombre(),
-                    venta.getCantidad(),
-                    venta.getProducto().getPrecio(),
-                    venta.getTotal(),
-                    venta.getId(),
-                    venta.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+                        usuario.getNombre(),
+                        venta.getProducto().getNombre(),
+                        venta.getCantidad(),
+                        venta.getProducto().getPrecio(),
+                        venta.getTotal(),
+                        venta.getId(),
+                        venta.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
                 );
 
             helper.setText(contenidoHtml, true);
@@ -131,7 +141,77 @@ public class EmailService {
         }
     }
 
-    // Método para asignar imagen según el área
+    // =================================================================================
+    // 📌 MÉTODO 2: CONFIRMACIÓN DE CHECKOUT FORMAL (NUEVO MÉTODO SOBRECARGADO)
+    //    Este método usa la información del DTO para incluir los detalles de la entrega.
+    // =================================================================================
+    @Async
+    public void enviarConfirmacionCompra(Usuario usuario, VentaRequestDTO ventaRequest, List<Venta> ventasGuardadas) { // <-- NUEVA FIRMA
+        try {
+            MimeMessage mensaje = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mensaje, true);
+
+            helper.setTo(usuario.getEmail());
+            helper.setSubject("Confirmación de tu compra (Checkout) - Devíoz");
+
+            // Calcular el total general de la orden
+            BigDecimal totalGeneral = ventasGuardadas.stream()
+                .map(Venta::getTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            
+            // Construir la lista de ítems comprados
+            StringBuilder itemsHtml = new StringBuilder();
+            ventasGuardadas.forEach(venta -> {
+                itemsHtml.append(String.format(
+                    "<li>%d x %s ($%.2f c/u)</li>",
+                    venta.getCantidad(),
+                    venta.getProducto().getNombre(),
+                    venta.getProducto().getPrecio()
+                ));
+            });
+            
+            String contenidoHtml = """
+                <h2>¡Tu pedido ha sido confirmado!</h2>
+                <p>Hola <b>%s</b>, hemos recibido tu compra con los siguientes detalles:</p>
+                
+                <div style="background: #e6f7ff; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                    <h3>📦 Resumen del Pedido (#%d)</h3>
+                    <ul>%s</ul>
+                    <hr style="border-top: 1px solid #ccc;"/>
+                    <p style="font-size: 1.1em;"><b>TOTAL A PAGAR:</b> $%.2f</p>
+                </div>
+
+                <div style="background: #f5f5f5; padding: 15px; border-radius: 5px;">
+                    <h3>📍 Datos de Entrega</h3>
+                    <p><b>Contacto:</b> %s (%s)</p>
+                    <p><b>Método:</b> %s</p>
+                    <p><b>Dirección de entrega:</b> %s</p>
+                </div>
+                
+                <p style="margin-top: 20px; color: #cc0000;">
+                    <b>¡Importante!</b> En breve nos comunicaremos contigo al número %s para coordinar la contra entrega del producto.
+                </p>
+                """.formatted(
+                    usuario.getNombre(),
+                    ventasGuardadas.get(0).getId(), // Usamos el ID de la primera venta como referencia de pedido
+                    itemsHtml.toString(),
+                    totalGeneral,
+                    ventaRequest.getNombreCliente(),
+                    ventaRequest.getTelefonoCliente(),
+                    ventaRequest.getTipoEntrega().replace("_", " "), // Limpiar el nombre de la entrega
+                    ventaRequest.getDireccionEntrega(),
+                    ventaRequest.getTelefonoCliente()
+                );
+
+            helper.setText(contenidoHtml, true);
+            mailSender.send(mensaje);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Método para asignar imagen según el área - MANTENIDO
     private String obtenerImagenPorArea(String area) {
         return switch (area) {
             case "Desarrollo Web" -> "web.png";

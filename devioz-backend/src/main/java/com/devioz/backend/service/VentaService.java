@@ -1,56 +1,116 @@
 package com.devioz.backend.service;
 
+import com.devioz.backend.dto.VentaRequestDTO; 
+import com.devioz.backend.dto.VentaRequestDTO.ItemVentaRequestDTO;
+import com.devioz.backend.model.Producto;
+import com.devioz.backend.model.Usuario;
 import com.devioz.backend.model.Venta;
-import com.devioz.backend.repository.VentaRepository;
-import org.springframework.lang.NonNull; // Importado para Null Safety
+import com.devioz.backend.repository.ProductoRepository;
+import com.devioz.backend.repository.VentaRepository; // Ya existente
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // Importado para transacciones
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @Service
-// Es una buena práctica hacer toda la clase Transaccional
-// y luego anularla con (readOnly = true) para los métodos GET.
 @Transactional
 public class VentaService {
 
     private final VentaRepository ventaRepository;
+    private final ProductoRepository productoRepository; 
 
-    public VentaService(VentaRepository ventaRepository) {
+    // Constructor que inyecta ambos repositorios
+    public VentaService(VentaRepository ventaRepository, ProductoRepository productoRepository) {
         this.ventaRepository = ventaRepository;
+        this.productoRepository = productoRepository;
     }
 
+    // =================================================================
+    // 📌 MÉTODOS DE LECTURA (Corregidos para usar los métodos existentes del Repository)
+    // =================================================================
+    
     /**
-     * Obtiene todas las ventas con sus detalles (Usuario y Producto).
-     * Soluciona el problema N+1.
+     * Soluciona el error de getAllVentas() - Usa findAllWithDetails() del Repository.
      */
-    @Transactional(readOnly = true) // Métodos de lectura son más eficientes
+    @Transactional(readOnly = true) 
     public List<Venta> getAllVentas() {
-        return ventaRepository.findAllWithDetails(); // CAMBIO
+        return ventaRepository.findAllWithDetails(); 
     }
 
     /**
-     * Obtiene las ventas de un usuario con sus detalles (Producto).
-     * Soluciona el problema N+1.
-     * Arregla el warning de Null Safety con @NonNull.
+     * Soluciona el error de getVentasByUsuarioId(Long) - Usa findByUsuarioIdWithDetails() del Repository.
      */
     @Transactional(readOnly = true)
-    public List<Venta> getVentasByUsuarioId(@NonNull Long usuarioId) { // CAMBIO: @NonNull
-        return ventaRepository.findByUsuarioIdWithDetails(usuarioId); // CAMBIO
+    public List<Venta> getVentasByUsuarioId(@NonNull Long usuarioId) { 
+        return ventaRepository.findByUsuarioIdWithDetails(usuarioId); // <-- CORREGIDO
     }
 
     @Transactional(readOnly = true)
-    public Optional<Venta> getVentaById(@NonNull Long id) { // CAMBIO: @NonNull
+    public Optional<Venta> getVentaById(@NonNull Long id) { 
         return ventaRepository.findById(id);
     }
+    
+    // =================================================================
+    // 📌 MÉTODOS DE ESCRITURA Y CHECKOUT FORMAL
+    // =================================================================
 
-    // Los métodos de escritura no llevan readOnly
-    public Venta saveVenta(@NonNull Venta venta) { // CAMBIO: @NonNull
+    public Venta saveVenta(@NonNull Venta venta) { 
         return ventaRepository.save(venta);
     }
 
-    public void deleteVenta(@NonNull Long id) { // CAMBIO: @NonNull
+    public void deleteVenta(@NonNull Long id) { 
         ventaRepository.deleteById(id);
+    }
+    
+    /**
+     * Lógica del Checkout Formal: Procesa el carrito y los datos de envío.
+     */
+    @Transactional
+    public List<Venta> procesarVentaCheckout(VentaRequestDTO ventaRequest, Usuario usuario) throws Exception {
+        
+        List<Venta> nuevasVentas = new ArrayList<>();
+        
+        for (ItemVentaRequestDTO item : ventaRequest.getItems()) {
+            
+            Optional<Producto> productoOpt = productoRepository.findById(item.getProductoId());
+            
+            if (productoOpt.isEmpty()) {
+                throw new Exception("Producto no encontrado con ID: " + item.getProductoId());
+            }
+
+            Producto producto = productoOpt.get();
+            Integer cantidad = item.getCantidad();
+
+            if (producto.getStock() < cantidad) {
+                throw new Exception("Stock insuficiente para el producto: " + producto.getNombre());
+            }
+
+            // Crear Venta y calcular Total
+            BigDecimal totalItem = producto.getPrecio().multiply(BigDecimal.valueOf(cantidad));
+
+            Venta venta = new Venta();
+            venta.setUsuario(usuario);
+            venta.setProducto(producto);
+            venta.setCantidad(cantidad);
+            venta.setTotal(totalItem);
+            venta.setFecha(LocalDateTime.now());
+            venta.setEstado("PENDIENTE");
+            
+            // Guardar la información de Entrega del DTO (Requiere que Venta.java tenga los setters)
+            venta.setDireccionEnvio(ventaRequest.getDireccionEntrega()); 
+            
+            // Actualizar Stock
+            producto.setStock(producto.getStock() - cantidad);
+            productoRepository.save(producto);
+
+            nuevasVentas.add(ventaRepository.save(venta));
+        }
+
+        return nuevasVentas;
     }
 }

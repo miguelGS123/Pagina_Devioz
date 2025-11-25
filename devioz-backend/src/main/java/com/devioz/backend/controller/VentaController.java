@@ -1,6 +1,7 @@
 package com.devioz.backend.controller;
 
 import com.devioz.backend.dto.VentaDTO;
+import com.devioz.backend.dto.VentaRequestDTO; // <-- DTO DE ENTRADA (NUEVO)
 import com.devioz.backend.model.Producto;
 import com.devioz.backend.model.Usuario;
 import com.devioz.backend.model.Venta;
@@ -11,6 +12,7 @@ import com.devioz.backend.service.EmailService;
 import com.devioz.backend.service.VentaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -32,10 +34,9 @@ public class VentaController {
     private final UsuarioRepository usuarioRepository;
     private final ProductoRepository productoRepository;
     private final EmailService emailService;
+    private final VentaRepository ventaRepository;
 
     @Autowired
-    private VentaRepository ventaRepository;
-
     public VentaController(VentaService ventaService,
                            UsuarioRepository usuarioRepository,
                            ProductoRepository productoRepository,
@@ -48,7 +49,7 @@ public class VentaController {
         this.ventaRepository = ventaRepository;
     }
 
-    // 📌 Obtener todas las ventas (Historial General - Admin/Vendedor Logística)
+    // 📌 Obtener todas las ventas (Historial General)
     @GetMapping
     public List<VentaDTO> getAllVentas() {
         return ventaService.getAllVentas()
@@ -57,7 +58,7 @@ public class VentaController {
                 .collect(Collectors.toList());
     }
 
-    // 📌 Obtener ventas del usuario autenticado (Cliente: "Mis Compras")
+    // 📌 Obtener ventas del usuario autenticado ("Mis Compras")
     @GetMapping("/mis-ventas")
     public ResponseEntity<?> getMisVentas(Authentication authentication) {
         String email = authentication.getName();
@@ -68,9 +69,9 @@ public class VentaController {
         }
 
         List<VentaDTO> ventas = ventaService.getVentasByUsuarioId(usuarioOpt.get().getId())
-                                            .stream()
-                                            .map(VentaDTO::new)
-                                            .toList();
+                .stream()
+                .map(VentaDTO::new)
+                .toList();
 
         return ResponseEntity.ok(ventas);
     }
@@ -83,7 +84,47 @@ public class VentaController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // 📌 Crear una venta (Cliente compra)
+    // =======================================================================
+    // 👇 NUEVO ENDPOINT: CHECKOUT FORMAL (Múltiples ítems y Envío) 👇
+    // =======================================================================
+    @PostMapping("/crear-checkout")
+    public ResponseEntity<?> crearVentaCheckout(
+            @RequestBody VentaRequestDTO ventaRequest,
+            Authentication authentication) {
+
+        if (ventaRequest.getItems() == null || ventaRequest.getItems().isEmpty()) {
+            return ResponseEntity.badRequest().body("El carrito está vacío.");
+        }
+        
+        String email = authentication.getName();
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
+
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no autenticado o no encontrado.");
+        }
+        
+        Usuario usuario = usuarioOpt.get(); // Obtenemos el usuario aquí
+
+        try {
+            // 1. Procesar la venta y generar la lista de registros de venta
+            List<Venta> nuevasVentas = ventaService.procesarVentaCheckout(ventaRequest, usuario);
+
+            // 2. Enviar confirmación al cliente (CORRECCIÓN FINAL)
+            // Se usan los 3 argumentos: el usuario, los datos del DTO y la lista de ventas guardadas
+            CompletableFuture.runAsync(() -> {
+                 emailService.enviarConfirmacionCompra(usuario, ventaRequest, nuevasVentas); 
+            });
+
+            return ResponseEntity.ok("Compra procesada exitosamente. Se generaron " + nuevasVentas.size() + " registros de venta.");
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error al procesar la compra: " + e.getMessage());
+        }
+    }
+    // =======================================================================
+
+
+    // 📌 Crear una venta (Endpoint ANTIGUO para un solo producto)
     @PostMapping
     public ResponseEntity<?> crearVenta(@RequestParam Long productoId,
                                         @RequestParam Integer cantidad,
@@ -125,13 +166,14 @@ public class VentaController {
         Venta savedVenta = ventaService.saveVenta(venta);
 
         CompletableFuture.runAsync(() -> {
-            emailService.enviarConfirmacionCompra(usuario, savedVenta);
+             // Mantiene la llamada antigua que usa el objeto Venta individual
+             emailService.enviarConfirmacionCompra(usuario, savedVenta); 
         });
 
         return ResponseEntity.ok(new VentaDTO(savedVenta));
     }
 
-    // 📌 Eliminar venta (Solo Admin o Dueño - lógica en servicio)
+    // 📌 Eliminar venta (Solo Admin o Dueño)
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteVenta(@PathVariable Long id, Authentication authentication) {
         Optional<Venta> ventaOpt = ventaService.getVentaById(id);
@@ -152,10 +194,6 @@ public class VentaController {
         return ResponseEntity.ok("Venta eliminada correctamente");
     }
 
-    // ==========================================
-    // 👇 MÉTODOS DE LOGÍSTICA VENDEDOR 👇
-    // ==========================================
-
     // 📌 Obtener TODAS las ventas para gestión (Vendedor Logístico)
     @GetMapping("/vendedor")
     public List<Venta> getVentasVendedor(Authentication authentication) {
@@ -167,7 +205,8 @@ public class VentaController {
     public ResponseEntity<?> agendarEnvio(@PathVariable Long id, @RequestBody Map<String, String> datos) {
         return ventaRepository.findById(id).map(venta -> {
             venta.setEstado("AGENDADO");
-            venta.setDireccionEnvio(datos.get("direccion"));
+            // Estos setters funcionan porque verificamos que Venta.java ya los tiene
+            venta.setDireccionEnvio(datos.get("direccion")); 
             venta.setFechaEnvioProgramada(datos.get("fecha"));
             ventaRepository.save(venta);
             return ResponseEntity.ok("Envío agendado correctamente");
