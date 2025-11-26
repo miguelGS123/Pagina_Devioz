@@ -10,7 +10,8 @@ import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "http://localhost:5173") // 👈 ajusta tu frontend aquí
+// ✅ CAMBIO: Permitir acceso desde Hostinger (y cualquier otro origen)
+@CrossOrigin(origins = "*")
 public class FormularioController {
 
     private final FormularioRepository formularioRepository;

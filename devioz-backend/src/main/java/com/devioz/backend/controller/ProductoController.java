@@ -16,7 +16,8 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/productos")
-@CrossOrigin(origins = "http://localhost:5173") // Asegura CORS para el frontend
+// ✅ CAMBIO: Permitir acceso desde Hostinger (y cualquier otro origen)
+@CrossOrigin(origins = "*") 
 public class ProductoController {
 
     @Autowired

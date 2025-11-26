@@ -22,7 +22,8 @@ import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api/ventas")
-@CrossOrigin(origins = "http://localhost:5173")
+// ✅ CAMBIO: Permitir acceso desde Hostinger (y cualquier otro origen)
+@CrossOrigin(origins = "*")
 public class VentaController {
 
     private final VentaService ventaService;

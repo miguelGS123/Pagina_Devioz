@@ -1,7 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8008/api",
+  // ✅ CAMBIO: IP Pública de tu VPS en lugar de localhost
+  baseURL: "http://34.70.194.150:8008/api",
   headers: {
     "Content-Type": "application/json",
   },

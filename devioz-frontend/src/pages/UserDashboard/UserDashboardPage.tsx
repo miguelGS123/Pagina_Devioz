@@ -52,22 +52,25 @@ const UserDashboardPage: React.FC = () => {
     // 📌 FUNCIÓN REUTILIZABLE PARA CARGAR DATOS
     const fetchData = async (parsedUser: Usuario, token: string) => {
         try {
+            // ✅ CAMBIO: URL DE PRODUCCIÓN
             // Cargar usuario actualizado
             const userRes = await axios.get(
-                `http://localhost:8008/api/usuarios/${parsedUser.id}`,
+                `http://34.70.194.150:8008/api/usuarios/${parsedUser.id}`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             setUser(userRes.data);
 
+            // ✅ CAMBIO: URL DE PRODUCCIÓN
             // Cargar productos
             const productosRes = await axios.get(
-                "http://localhost:8008/api/productos"
+                "http://34.70.194.150:8008/api/productos"
             );
             setProductos(productosRes.data);
 
+            // ✅ CAMBIO: URL DE PRODUCCIÓN
             // Cargar historial de ventas
             const ventasRes = await axios.get(
-                "http://localhost:8008/api/ventas/mis-ventas",
+                "http://34.70.194.150:8008/api/ventas/mis-ventas",
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             setVentas(ventasRes.data);
@@ -154,9 +157,10 @@ const UserDashboardPage: React.FC = () => {
                     telefonoCliente: user.telefono || "No registrado en perfil"
                 };
 
+                // ✅ CAMBIO: URL DE PRODUCCIÓN
                 // 👇 LLAMADA AL NUEVO ENDPOINT
                 await axios.post(
-                    "http://localhost:8008/api/ventas/checkout", 
+                    "http://34.70.194.150:8008/api/ventas/checkout", 
                     payload,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );

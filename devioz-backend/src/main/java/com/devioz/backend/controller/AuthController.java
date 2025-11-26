@@ -1,6 +1,6 @@
 package com.devioz.backend.controller;
 
-import com.devioz.backend.dto.RegisterRequest; // <-- 1. IMPORTA EL NUEVO DTO
+import com.devioz.backend.dto.RegisterRequest; 
 import com.devioz.backend.model.Usuario;
 import com.devioz.backend.repository.UsuarioRepository;
 import com.devioz.backend.service.AuthService;
@@ -12,8 +12,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/auth") // <-- Esta es la ruta correcta (la original)
-@CrossOrigin(origins = "http://localhost:5173")
+@RequestMapping("/auth") 
+// ✅ CAMBIO: Permitir acceso desde Hostinger (y cualquier otro origen)
+@CrossOrigin(origins = "*") 
 public class AuthController {
 
     @Autowired
@@ -24,17 +25,14 @@ public class AuthController {
 
     // ✅ Registro
     @PostMapping("/register")
-    // --- 2. CAMBIA 'Usuario' POR 'RegisterRequest' ---
     public ResponseEntity<?> register(@RequestBody RegisterRequest registerRequest) {
         
-        // --- 3. MAPEA EL DTO A LA ENTIDAD ---
         Usuario nuevoUsuario = new Usuario();
         nuevoUsuario.setNombre(registerRequest.getNombre());
         nuevoUsuario.setEmail(registerRequest.getEmail());
-        nuevoUsuario.setPassword(registerRequest.getPassword()); // <-- La contraseña SÍ llega
+        nuevoUsuario.setPassword(registerRequest.getPassword()); 
         nuevoUsuario.setTelefono(registerRequest.getTelefono());
 
-        // --- 4. PASA LA ENTIDAD COMPLETA AL SERVICIO ---
         String token = authService.register(nuevoUsuario);
 
         Map<String, Object> response = new HashMap<>();
@@ -44,7 +42,7 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    // ✅ Login (Este método no cambia)
+    // ✅ Login 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> loginData) {
         String email = loginData.get("email");
