@@ -19,10 +19,11 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ onClose }) => {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:8008/auth/register", {
+
+      const res = await fetch("https://api.devioz.com/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone, email, password }),
+        body: JSON.stringify({ nombre: name, telefono: phone, email, password }), 
       });
 
       if (!res.ok) {
@@ -89,7 +90,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ onClose }) => {
           <button
             type="submit"
             disabled={loading}
-            className="bg-teal-600 text-white py-2 rounded hover:bg-teal-700"
+            className="bg-teal-600 text-white py-2 rounded hover:bg-teal-700 disabled:opacity-50"
           >
             {loading ? "Registrando..." : "Registrarse"}
           </button>

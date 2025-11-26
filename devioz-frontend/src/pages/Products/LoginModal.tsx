@@ -22,9 +22,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
     setError("");
 
     try {
+      // ✅ ÚNICO CAMBIO: URL DE PRODUCCIÓN (https://api.devioz.com)
       const url = isRegister
-        ? "http://localhost:8008/auth/register"
-        : "http://localhost:8008/auth/login";
+        ? "https://api.devioz.com/auth/register"
+        : "https://api.devioz.com/auth/login";
 
       const body = isRegister
         ? { email, password, nombre: name, telefono: phone }
@@ -52,13 +53,13 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
 
         onClose();
 
-        // ✅ Redirigir según el rol del usuario (CORREGIDO)
+        // ✅ Redirigir según el rol del usuario
         switch (data.usuario.rol) {
           case "ROL_ADMIN":
-            navigate("/admin"); // <--- CORREGIDO
+            navigate("/admin");
             break;
           case "ROL_VENDEDOR":
-            navigate("/vendedor"); // <--- CORREGIDO
+            navigate("/vendedor");
             break;
           default:
             navigate("/usuario");
@@ -77,7 +78,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg w-96 relative">
+      <div className="bg-white p-6 rounded-lg w-96 relative shadow-2xl">
         <button
           onClick={onClose}
           className="absolute top-2 right-2 text-gray-700 text-xl hover:text-gray-900"

@@ -57,7 +57,11 @@ const ProductsPage: React.FC = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await fetch("http://localhost:8008/api/productos");
+        // ✅ ÚNICO CAMBIO: URL DE PRODUCCIÓN
+        // Antes: http://localhost:8008/api/productos
+        // Ahora: https://api.devioz.com/api/productos
+        const res = await fetch("https://api.devioz.com/api/productos");
+        
         if (!res.ok) throw new Error("Error al cargar productos");
         const data = await res.json();
         setProducts(data);

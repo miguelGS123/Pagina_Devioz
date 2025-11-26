@@ -21,7 +21,6 @@ interface Props {
 const AdminProductsTable: React.FC<Props> = ({ productos, setProductos }) => {
   const [editing, setEditing] = useState<Producto | null>(null);
   const [loading, setLoading] = useState(false);
-  // ✅ ESTADO: Controla la carga de la imagen
   const [uploading, setUploading] = useState(false);
 
   // --- ELIMINAR PRODUCTO ---
@@ -52,7 +51,7 @@ const AdminProductsTable: React.FC<Props> = ({ productos, setProductos }) => {
     }
   };
 
-  // --- SUBIR IMAGEN (NUEVO) ---
+  // --- SUBIR IMAGEN ---
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -62,24 +61,22 @@ const AdminProductsTable: React.FC<Props> = ({ productos, setProductos }) => {
 
     setUploading(true);
     try {
-      // Enviamos el archivo al endpoint del backend
       const response = await api.post('/productos/upload', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      // Actualizamos el estado de edición con la URL devuelta
       if (editing) {
           setEditing({ ...editing, imagen: response.data });
       }
     } catch (error) {
       console.error("Error subiendo imagen:", error);
-      Swal.fire("Error", "No se pudo subir la imagen. Revisa el backend.", "error");
+      Swal.fire("Error", "No se pudo subir la imagen.", "error");
     } finally {
       setUploading(false);
     }
   };
 
-  // --- GUARDAR (CREAR O EDITAR) ---
+  // --- GUARDAR ---
   const handleSave = async (prod: Producto) => {
     try {
       if (!prod.nombre || prod.precio <= 0 || prod.stock < 0) {
@@ -217,7 +214,7 @@ const AdminProductsTable: React.FC<Props> = ({ productos, setProductos }) => {
               <option value="Otros">Otros</option>
             </select>
 
-            {/* ✅ CAMPO DE SUBIDA DE IMAGEN */}
+            {/* SECCIÓN DE IMAGEN */}
             <div className="mb-3">
                 <label className="block text-xs font-bold mb-1 text-gray-600">Imagen del Producto</label>
                 <input
@@ -234,13 +231,14 @@ const AdminProductsTable: React.FC<Props> = ({ productos, setProductos }) => {
                 
                 {uploading && <p className="text-blue-500 text-xs mt-1">Subiendo imagen...</p>}
                 
-                {/* Previsualización */}
                 {editing.imagen && !uploading && (
                     <div className="mt-2 border rounded p-2 text-center bg-gray-50">
                         <p className="text-xs text-gray-400 mb-1">Vista previa:</p>
                         <img 
-                            // Si es URL absoluta (http) usa esa, si no agrega localhost:8008
-                            src={editing.imagen.startsWith('http') ? editing.imagen : `http://localhost:8008${editing.imagen}`} 
+                            // ✅ CAMBIO CLAVE: USAR URL DE PRODUCCIÓN (https)
+                            src={editing.imagen.startsWith('http') 
+                                ? editing.imagen 
+                                : `https://api.devioz.com${editing.imagen}`} 
                             alt="Preview" 
                             className="h-32 mx-auto object-contain rounded"
                             onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/150?text=Error+Img'; }}
@@ -263,7 +261,6 @@ const AdminProductsTable: React.FC<Props> = ({ productos, setProductos }) => {
               />
             </div>
 
-            {/* BOTONES LIMPIOS Y CORREGIDOS */}
             <div className="flex justify-between mt-2">
               <button
                 onClick={() => setEditing(null)}

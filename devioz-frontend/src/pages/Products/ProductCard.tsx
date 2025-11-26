@@ -28,9 +28,11 @@ const ProductCard: React.FC<Props> = ({ product, onAddToCart }) => {
     // Si ya es una URL completa (ej: http o https)
     if (product.imagen.startsWith("http")) return product.imagen;
 
-    // Si viene del backend (/uploads/)
+    // ✅ CORRECCIÓN CRÍTICA: Apuntar a Producción (GCP)
+    // Antes: http://localhost:8008...
+    // Ahora: https://api.devioz.com...
     if (product.imagen.startsWith("/uploads/"))
-      return `http://localhost:8008${product.imagen}`;
+      return `https://api.devioz.com${product.imagen}`;
 
     // Si viene del public del frontend (/productos/)
     if (product.imagen.startsWith("/productos/"))

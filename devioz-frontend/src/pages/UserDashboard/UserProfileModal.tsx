@@ -25,8 +25,9 @@ const UserProfileModal: React.FC<Props> = ({ user, setUser, onClose }) => {
       const token = localStorage.getItem("token");
       if (!token) return;
 
+      // ✅ CAMBIO: URL DE PRODUCCIÓN (https://api.devioz.com)
       await axios.put(
-        `http://localhost:8008/api/usuarios/${user.id}`,
+        `https://api.devioz.com/api/usuarios/${user.id}`,
         {
           nombre,
           telefono,
@@ -56,7 +57,8 @@ const UserProfileModal: React.FC<Props> = ({ user, setUser, onClose }) => {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      await axios.delete(`http://localhost:8008/api/usuarios/${user.id}`, {
+      // ✅ CAMBIO: URL DE PRODUCCIÓN (https://api.devioz.com)
+      await axios.delete(`https://api.devioz.com/api/usuarios/${user.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

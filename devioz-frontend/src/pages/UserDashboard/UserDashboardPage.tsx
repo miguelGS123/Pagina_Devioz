@@ -49,13 +49,13 @@ const UserDashboardPage: React.FC = () => {
 
     const navigate = useNavigate();
 
-    // 📌 FUNCIÓN REUTILIZABLE PARA CARGAR DATOS
+    // 📌 FUNCIÓN REUTILIZABLE PARA CARGAR TODOS LOS DATOS (CORRECCIÓN)
     const fetchData = async (parsedUser: Usuario, token: string) => {
         try {
             // ✅ CAMBIO: URL DE PRODUCCIÓN
-            // Cargar usuario actualizado
+            // Cargar usuario
             const userRes = await axios.get(
-                `http://34.70.194.150:8008/api/usuarios/${parsedUser.id}`,
+                `https://api.devioz.com/api/usuarios/${parsedUser.id}`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             setUser(userRes.data);
@@ -63,23 +63,24 @@ const UserDashboardPage: React.FC = () => {
             // ✅ CAMBIO: URL DE PRODUCCIÓN
             // Cargar productos
             const productosRes = await axios.get(
-                "http://34.70.194.150:8008/api/productos"
+                "https://api.devioz.com/api/productos"
             );
             setProductos(productosRes.data);
 
             // ✅ CAMBIO: URL DE PRODUCCIÓN
             // Cargar historial de ventas
             const ventasRes = await axios.get(
-                "http://34.70.194.150:8008/api/ventas/mis-ventas",
+                "https://api.devioz.com/api/ventas/mis-ventas",
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             setVentas(ventasRes.data);
         } catch (err) {
             console.error("Error al cargar datos:", err);
+            // Aquí puedes manejar el error de autenticación (401/403) si el token es malo
         }
     };
     
-    // Cargar datos iniciales al montar
+    // Cargar datos iniciales
     useEffect(() => {
         const storedUser = localStorage.getItem("user");
         const token = localStorage.getItem("token");
@@ -92,6 +93,7 @@ const UserDashboardPage: React.FC = () => {
         const parsedUser: Usuario = JSON.parse(storedUser);
         setUser(parsedUser);
         
+        // Llamada a la función de carga
         fetchData(parsedUser, token);
         
     }, [navigate]);
@@ -115,13 +117,12 @@ const UserDashboardPage: React.FC = () => {
                 : prev.map((i) => (i.product.id === id ? { ...i, qty } : i))
         );
 
-    // --- 🛒 CHECKOUT / COMPRAR (LÓGICA ACTUALIZADA) ---
+    // --- Checkout / Comprar ---
     const handleCheckout = async () => {
         if (cartItems.length === 0) {
             await Swal.fire("🛒 Tu carrito está vacío", "", "info");
             return;
         }
-        
         const confirmacion = await Swal.fire({
             title: "¿Confirmar compra?",
             text: "¿Deseas continuar con el pago de tus productos?",
@@ -142,53 +143,52 @@ const UserDashboardPage: React.FC = () => {
                 return;
             }
             
-            // 🔄 Procesar cada ítem del carrito
+            // Lógica de compra (una petición por ítem)
             for (const item of cartItems) {
                 
-                // Preparar el cuerpo JSON que exige el Backend (VentaRequestDTO)
+                // ✅ NUEVA LÓGICA CHECKOUT CON DTO
                 const payload = {
                     productoId: item.product.id,
                     cantidad: item.qty,
-                    total: item.product.precio * item.qty, // Calculamos el total por ítem
-                    // Enviamos "A coordinar" porque el backend lo exige @NotBlank, 
-                    // pero la dirección real se define cuando el vendedor llama.
+                    total: item.product.precio * item.qty, 
                     direccionEnvio: "A coordinar con vendedor", 
-                    // Enviamos el teléfono del usuario o un texto por defecto si no tiene
                     telefonoCliente: user.telefono || "No registrado en perfil"
                 };
 
-                // ✅ CAMBIO: URL DE PRODUCCIÓN
-                // 👇 LLAMADA AL NUEVO ENDPOINT
+                // ✅ CAMBIO: URL DE PRODUCCIÓN Y NUEVO ENDPOINT
                 await axios.post(
-                    "http://34.70.194.150:8008/api/ventas/checkout", 
+                    "https://api.devioz.com/api/ventas/checkout",
                     payload,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
             }
             
-            // ✅ MENSAJE ACTUALIZADO SOLICITADO
+            // ✅ NUEVO MENSAJE
             await Swal.fire(
                 "✅ ¡Pedido realizado!",
                 "Uno de nuestros vendedores se comunicará contigo para agendar el envío del pedido.",
                 "success"
             );
             
-            // Limpiar carrito y actualizar datos
+            // 1. Limpiar el carrito
             setCartItems([]);
             setTotal(0);
             setCartOpen(false);
             
-            // Recargar historial para ver la nueva compra
+            // 2. 🚀 ¡ACTUALIZAR EL HISTORIAL DE VENTAS! (CORRECCIÓN)
+            // Esto asegura que la nueva venta aparezca inmediatamente.
             await fetchData(user, token); 
             
         } catch (error: any) {
             console.error("❌ Error al procesar la compra:", error);
-            const msg = error.response?.data || "Error inesperado. Por favor, intenta nuevamente.";
+            const msg =
+                error.response?.data ||
+                "Error inesperado. Por favor, intenta nuevamente.";
             await Swal.fire("❌ Error", msg, "error");
         }
     };
 
-    // --- Calcular total ---
+    // --- Calcular total (CORREGIDO) ---
     useEffect(() => {
         const nuevoTotal = cartItems.reduce((acumulador, item) => {
             return acumulador + (item.product.precio * item.qty);
@@ -218,7 +218,7 @@ const UserDashboardPage: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-white text-gray-900">
-            {/* Header */}
+            {/* ... JSX del Dashboard ... */}
             <DashboardHeader
                 user={user}
                 cartItems={cartItems}
@@ -230,7 +230,6 @@ const UserDashboardPage: React.FC = () => {
                 setMenuOpen={setMenuOpen}
             />
 
-            {/* Contenido Principal (Productos y Filtros) */}
             <motion.div
                 key="productos"
                 initial={{ opacity: 0 }}
@@ -247,7 +246,6 @@ const UserDashboardPage: React.FC = () => {
                 <DashboardProducts productos={filtered} onAddToCart={handleAddToCart} />
             </motion.div>
 
-            {/* Sidebar del Carrito */}
             <CartSidebar
                 open={cartOpen}
                 onClose={() => setCartOpen(false)}
@@ -260,7 +258,6 @@ const UserDashboardPage: React.FC = () => {
                 onCheckout={handleCheckout}
             />
 
-            {/* Modales */}
             {perfilOpen && (
                 <UserProfileModal
                     user={user}

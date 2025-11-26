@@ -27,13 +27,15 @@ const CartSidebar: React.FC<CartSidebarProps> = ({
   total,
   onCheckout,
 }) => {
-  // 🔹 URL base del backend
-  const API_BASE_URL = "http://localhost:8008";
+  // 🔹 URL base del backend (PRODUCCIÓN)
+  const API_BASE_URL = "https://api.devioz.com";
 
   // 🔹 Función para construir la URL correcta de imagen
   const getImageUrl = (imagePath?: string) => {
     if (!imagePath) return "/images/no-image.png"; // imagen de respaldo
     if (imagePath.startsWith("http")) return imagePath; // ya es URL completa
+    // Si empieza con /, quitamos la barra inicial para evitar dobles // si la base la tiene
+    // O simplemente concatenamos. En tu caso api.devioz.com NO tiene / al final.
     if (imagePath.startsWith("/")) return `${API_BASE_URL}${imagePath}`;
     return `${API_BASE_URL}/${imagePath}`;
   };

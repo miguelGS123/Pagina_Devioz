@@ -21,7 +21,6 @@ interface Props {
 const VendedorProductsTable: React.FC<Props> = ({ productos, setProductos }) => {
   const [editing, setEditing] = useState<VendedorProducto | null>(null);
   const [loading, setLoading] = useState(false);
-  // ✅ ESTADO NUEVO: Para controlar la subida de imagen
   const [uploading, setUploading] = useState(false);
 
   const [search, setSearch] = useState("");
@@ -37,7 +36,7 @@ const VendedorProductsTable: React.FC<Props> = ({ productos, setProductos }) => 
     });
   }, [productos, search, categoriaFiltro]);
 
-  // --- LOGICA DE SUBIDA DE IMAGEN (NUEVO) ---
+  // --- LOGICA DE SUBIDA DE IMAGEN ---
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -47,12 +46,10 @@ const VendedorProductsTable: React.FC<Props> = ({ productos, setProductos }) => 
 
     setUploading(true);
     try {
-      // POST al endpoint que creamos en el Backend
       const response = await api.post('/productos/upload', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      // Actualizamos el estado con la URL que devuelve el backend
       if (editing) {
           setEditing({ ...editing, imagen: response.data });
       }
@@ -104,7 +101,6 @@ const VendedorProductsTable: React.FC<Props> = ({ productos, setProductos }) => 
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 relative">
-      {/* Spinner de Carga */}
       {loading && (
         <div className="absolute inset-0 bg-white/70 z-50 flex items-center justify-center">
             <p className="font-semibold text-teal-600 animate-pulse">Procesando...</p>
@@ -194,7 +190,6 @@ const VendedorProductsTable: React.FC<Props> = ({ productos, setProductos }) => 
               className="w-full border border-gray-300 px-3 py-2 mb-3 rounded focus:ring-2 focus:ring-teal-500"
             />
 
-            {/* SELECTOR DE CATEGORÍA */}
             <select
               value={editing.categoria}
               onChange={(e) => setEditing({ ...editing, categoria: e.target.value })}
@@ -210,7 +205,7 @@ const VendedorProductsTable: React.FC<Props> = ({ productos, setProductos }) => 
               <option value="Otros">Otros</option>
             </select>
             
-            {/* ✅ CAMPO DE SUBIDA DE IMAGEN (FILE INPUT) */}
+            {/* SECCIÓN DE IMAGEN */}
             <div className="mb-3">
                 <label className="block text-xs font-bold mb-1 text-gray-600">Imagen del Producto</label>
                 <input
@@ -227,13 +222,14 @@ const VendedorProductsTable: React.FC<Props> = ({ productos, setProductos }) => 
                 
                 {uploading && <p className="text-blue-500 text-xs mt-1">Subiendo imagen...</p>}
                 
-                {/* Previsualización */}
                 {editing.imagen && !uploading && (
                     <div className="mt-2 border rounded p-2 text-center bg-gray-50">
                         <p className="text-xs text-gray-400 mb-1">Vista previa:</p>
                         <img 
-                            // Lógica para mostrar la imagen localmente (puerto 8008)
-                            src={editing.imagen.startsWith('http') ? editing.imagen : `http://localhost:8008${editing.imagen}`} 
+                            // ✅ CAMBIO CLAVE: USAR URL DE PRODUCCIÓN (https)
+                            src={editing.imagen.startsWith('http') 
+                                ? editing.imagen 
+                                : `https://api.devioz.com${editing.imagen}`} 
                             alt="Preview" 
                             className="h-32 mx-auto object-contain rounded"
                             onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/150?text=Error+Img'; }}

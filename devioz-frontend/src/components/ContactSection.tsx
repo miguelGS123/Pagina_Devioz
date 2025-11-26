@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import Modal from "./Modal"; // 
+import Modal from "./Modal"; 
+import api from "../api/axiosConfig"; // ✅ 1. IMPORTAMOS TU CONFIGURACIÓN DE AXIOS
 
 const ContactSection: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -36,34 +37,24 @@ const ContactSection: React.FC = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch("http://localhost:8008/api/formulario", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
-      });
+      // ✅ 2. CAMBIO CRÍTICO: Usamos 'api.post' en lugar de 'fetch localhost'
+      // Esto usará automáticamente https://api.devioz.com/api/formulario
+      await api.post("/formulario", formData);
 
-      if (response.ok) {
-        
-        showModal(
-          "¡Mensaje Enviado!", 
-          "Tu mensaje ha sido enviado correctamente. Nos pondremos en contacto contigo pronto.", 
-          "success"
-        );
-        setFormData({ asunto: "", correo: "", telefono: "", area: "", mensaje: "" });
-      } else {
-      
-        showModal(
-          "Error al Enviar", 
-          "Hubo un problema al enviar el formulario. Por favor, intenta nuevamente.", 
-          "error"
-        );
-      }
+      // Si no lanza error, asumimos éxito (Axios lanza error si no es 2xx)
+      showModal(
+        "¡Mensaje Enviado!", 
+        "Tu mensaje ha sido enviado correctamente. Nos pondremos en contacto contigo pronto.", 
+        "success"
+      );
+      setFormData({ asunto: "", correo: "", telefono: "", area: "", mensaje: "" });
+
     } catch (error) {
-      console.error("Error en fetch:", error);
+      console.error("Error en envío:", error);
       
       showModal(
-        "Error de Conexión", 
-        "No se pudo conectar con el servidor. Verifica tu conexión e intenta nuevamente.", 
+        "Error al Enviar", 
+        "Hubo un problema al enviar el formulario o no se pudo conectar con el servidor. Por favor, intenta nuevamente.", 
         "error"
       );
     }
@@ -84,8 +75,6 @@ const ContactSection: React.FC = () => {
         {/* Formulario */}
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-md p-8">
 
-          {/* ... (tus campos del formulario se mantienen igual) ... */}
-          
           {/* Asunto */}
           <div className="mb-6">
             <label className="block text-gray-700 font-semibold mb-3">Asunto</label>

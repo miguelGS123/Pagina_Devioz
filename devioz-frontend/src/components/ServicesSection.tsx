@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 
 const ServicesSection: React.FC = () => {
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
-  const words = ["Flexible", "Preparado para Usar", "Personalizable", "Tecnología", "Waaazaaaa"];
+  const words = ["Flexible", "Preparado para Usar", "Personalizable", "Tecnología"];
 
   useEffect(() => {
     const interval = setInterval(() => {

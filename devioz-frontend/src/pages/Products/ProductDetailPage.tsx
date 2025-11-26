@@ -21,8 +21,10 @@ const ProductDetailPage: React.FC = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        // Usamos la URL completa aquí por seguridad, o tu instancia 'api'
-        const response = await axios.get(`http://localhost:8008/api/productos/${id}`);
+        // ✅ CORRECCIÓN CRÍTICA: Usamos la URL de Producción
+        // Antes: http://localhost:8008/api/productos/...
+        // Ahora: https://api.devioz.com/api/productos/...
+        const response = await axios.get(`https://api.devioz.com/api/productos/${id}`);
         setProduct(response.data);
       } catch (error) {
         console.error("Error al cargar el producto:", error);
@@ -38,7 +40,11 @@ const ProductDetailPage: React.FC = () => {
   const getImageUrl = (img: string) => {
     if (!img) return "https://via.placeholder.com/400"; // Imagen por defecto si no hay
     if (img.startsWith("http")) return img; // Si ya es una URL completa (ej. internet), la deja igual
-    return `http://localhost:8008${img}`; // Si es local, le pega tu backend
+    
+    // ✅ CORRECCIÓN CRÍTICA: Apuntar al Backend en la Nube
+    // Antes: http://localhost:8008${img}
+    // Ahora: https://api.devioz.com${img}
+    return `https://api.devioz.com${img}`; 
   };
   // --- 👆 ------------------------------------------
 
