@@ -6,6 +6,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.core.GrantedAuthorityDefaults;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -20,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Configuration
+@EnableWebSecurity
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
@@ -40,16 +42,25 @@ public class SecurityConfig {
         return authConfig.getAuthenticationManager();
     }
 
-    // 3. Configuración CORS (Permite conexión con Frontend)
+    // 3. Configuración CORS GLOBAL (Permite conexión con Hostinger y otros)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Orígenes permitidos (Frontend local y Docker)
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:80")); 
+        
+        // ✅ CAMBIO: Permitir TODO (*) para evitar bloqueos de Hostinger
+        configuration.setAllowedOrigins(List.of("*")); 
+        
+        // Métodos permitidos
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        // Headers necesarios para JWT e Imágenes
+        
+        // Headers necesarios
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control", "Pragma", "Expires", "X-Requested-With"));
-        configuration.setAllowCredentials(true);
+        
+        // ⚠️ IMPORTANTE: Si usas origins "*", allowCredentials NO puede ser true en navegadores modernos.
+        // Si necesitas credentials (cookies), debes poner la lista explícita de dominios.
+        // Como usas JWT (Header Authorization), generalmente NO necesitas credentials=true.
+        configuration.setAllowCredentials(false); 
+        
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -57,10 +68,11 @@ public class SecurityConfig {
         return source;
     }
 
-    // 4. Cadena de Filtros de Seguridad (El cerebro de la seguridad)
+    // 4. Cadena de Filtros de Seguridad
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            // Activar CORS usando la configuración de arriba
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -71,51 +83,36 @@ public class SecurityConfig {
                 .requestMatchers("/api/formulario/**").permitAll()
                 .requestMatchers("/api/chat/**").permitAll()
                 .requestMatchers("/api/hello").permitAll()
-                // Permite ver las imágenes sin token:
                 .requestMatchers("/uploads/**").permitAll() 
-                // Permite ver errores 404/500 sin ser redirigido a login (CRÍTICO para depurar):
                 .requestMatchers("/error").permitAll()
 
                 // === ZONA DE PRODUCTOS ===
-                // "Mis Productos" requiere ROL explícito antes de la regla general GET
                 .requestMatchers("/api/productos/mis-productos").hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
-                // Ver productos es público
                 .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
-                // Gestión de productos
                 .requestMatchers(HttpMethod.POST, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
                 .requestMatchers(HttpMethod.PUT, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
                 .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasAuthority("ROL_ADMIN")
                 
                 // === ZONA DE USUARIOS ===
-                // Ver perfil propio (cualquier autenticado)
                 .requestMatchers(HttpMethod.GET, "/api/usuarios/**").authenticated()
-                // Gestión de usuarios (SOLO ADMIN)
                 .requestMatchers(HttpMethod.POST, "/api/usuarios").hasAuthority("ROL_ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/usuarios/**").hasAuthority("ROL_ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/usuarios/**").hasAuthority("ROL_ADMIN")
 
                 // === ZONA DE VENTAS ===
-                // Cliente ve lo suyo
-                .requestMatchers("/api/ventas/mis-ventas").hasAuthority("ROL_USUARIO")
-                // Vendedor ve pedidos entrantes
+                .requestMatchers("/api/ventas/mis-ventas").hasAnyAuthority("ROL_USUARIO", "ROL_VENDEDOR", "ROL_ADMIN") // Amplié permisos para evitar errores raros
+                .requestMatchers("/api/ventas/checkout").authenticated() // ✅ Checkout para cualquier autenticado
                 .requestMatchers("/api/ventas/vendedor").hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
-                // Logística (Agendar envío)
                 .requestMatchers("/api/ventas/*/agendar").hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
-                // Ver listado general
                 .requestMatchers(HttpMethod.GET, "/api/ventas").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
-                // Crear venta (Comprar)
                 .requestMatchers(HttpMethod.POST, "/api/ventas/**").hasAuthority("ROL_USUARIO")
-                // Borrar historial
                 .requestMatchers(HttpMethod.DELETE, "/api/ventas/**").hasAnyAuthority("ROL_ADMIN", "ROL_USUARIO")
 
                 // === CANDADO FINAL ===
-                // Cualquier otra ruta no listada requiere autenticación
                 .anyRequest().authenticated()
             )
-            // Añadimos tu filtro JWT antes del filtro estándar
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
-        // Esto hace que Spring busque "ROL_ADMIN" en vez de "ROLE_ROL_ADMIN"
         http.setSharedObject(GrantedAuthorityDefaults.class, new GrantedAuthorityDefaults(""));
 
         return http.build();
