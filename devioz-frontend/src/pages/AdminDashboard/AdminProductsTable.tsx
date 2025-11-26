@@ -138,7 +138,7 @@ const AdminProductsTable: React.FC<Props> = ({ productos, setProductos }) => {
 
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-teal-600">
-          🛍️ Gestión de Productos
+           Gestión de Productos
         </h2>
         <button
           onClick={handleNew}

@@ -10,11 +10,11 @@ interface Props {
 }
 
 const AdminSalesDashboard: React.FC<Props> = ({ ventas }) => {
-  // 🧩 Filtros
+  //  Filtros
   const [selectedProduct, setSelectedProduct] = useState("Todos");
   const [selectedDate, setSelectedDate] = useState<string>("");
 
-  // 🧮 Filtrar ventas según producto y fecha
+  //  Filtrar ventas según producto y fecha
   const ventasFiltradas = useMemo(() => {
     return ventas.filter((v) => {
       // CORRECCIÓN: Usamos ?. para evitar error si producto es null
@@ -28,7 +28,7 @@ const AdminSalesDashboard: React.FC<Props> = ({ ventas }) => {
     });
   }, [ventas, selectedProduct, selectedDate]);
 
-  // 📊 Agrupación de datos
+  //  Agrupación de datos
   const ventasPorProducto = useMemo(() => {
     const map = new Map<string, number>();
     ventasFiltradas.forEach((v) => {
@@ -49,7 +49,7 @@ const AdminSalesDashboard: React.FC<Props> = ({ ventas }) => {
     return Array.from(map, ([name, total]) => ({ name, total }));
   }, [ventasFiltradas]);
 
-  // 📈 Evolución diaria (día/mes/año)
+  //  Evolución diaria (día/mes/año)
   const ventasPorDia = useMemo(() => {
     const map = new Map<string, number>();
     ventasFiltradas.forEach((v) => {
@@ -70,7 +70,7 @@ const AdminSalesDashboard: React.FC<Props> = ({ ventas }) => {
     return datosOrdenados;
   }, [ventasFiltradas]);
 
-  // 📦 KPIs
+  //  KPIs
   const totalVentas = ventasFiltradas.reduce((a, b) => a + b.total, 0);
   const totalProductos = ventasFiltradas.reduce((a, b) => a + b.cantidad, 0);
   
@@ -82,7 +82,7 @@ const AdminSalesDashboard: React.FC<Props> = ({ ventas }) => {
   const masVendido =
     ventasPorProducto.sort((a, b) => b.total - a.total)[0]?.name || "—";
 
-  // 🔁 Resetear filtros
+  //  Resetear filtros
   const limpiarFiltros = () => {
     setSelectedProduct("Todos");
     setSelectedDate("");
@@ -91,16 +91,16 @@ const AdminSalesDashboard: React.FC<Props> = ({ ventas }) => {
   return (
     <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
       <h2 className="text-2xl font-semibold text-teal-600 mb-6">
-        📈 Dashboard de Ventas
+         Dashboard de Ventas
       </h2>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {[
-          { label: "Total Ventas", value: `S/ ${totalVentas.toFixed(2)}`, icon: "💰" },
-          { label: "Productos Vendidos", value: totalProductos, icon: "📦" },
-          { label: "Productos únicos", value: productosUnicos, icon: "🛒" },
-          { label: "Más Vendido", value: masVendido, icon: "🔥" },
+          { label: "Total Ventas", value: `S/ ${totalVentas.toFixed(2)}`, icon: "" },
+          { label: "Productos Vendidos", value: totalProductos, icon: "" },
+          { label: "Productos únicos", value: productosUnicos, icon: "" },
+          { label: "Más Vendido", value: masVendido, icon: "" },
         ].map((kpi, i) => (
           <motion.div
             key={i}

@@ -29,7 +29,7 @@ const AdminSalesTable: React.FC<Props> = ({ ventas }) => {
   return (
     <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
       <h2 className="text-xl font-semibold text-teal-600 mb-4">
-        💰 Ventas Registradas
+         Ventas Registradas
       </h2>
 
       <div className="mb-4 flex justify-between items-center">
