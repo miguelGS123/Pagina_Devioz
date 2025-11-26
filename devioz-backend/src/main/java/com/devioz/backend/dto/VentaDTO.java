@@ -1,7 +1,7 @@
 package com.devioz.backend.dto;
 
 import com.devioz.backend.model.Producto;
-import com.devioz.backend.model.Usuario; // <-- 1. IMPORTAR USUARIO
+import com.devioz.backend.model.Usuario;
 import com.devioz.backend.model.Venta;
 
 import java.math.BigDecimal;
@@ -10,86 +10,86 @@ import java.time.LocalDateTime;
 public class VentaDTO {
 
     private Long id;
-    // private String usuarioNombre; // <-- 2. ELIMINAR ESTA LÍNEA
-    private UsuarioDTO usuario;       // <-- 3. AÑADIR ESTA LÍNEA (EL OBJETO)
+    private UsuarioDTO usuario;
     private ProductoDTO producto;
     private Integer cantidad;
     private BigDecimal total;
     private LocalDateTime fecha;
+    private String estado;
+    private String direccionEnvio;
+    private String telefonoCliente; 
+    private String fechaEnvioProgramada;
+    private String horaEnvioProgramada;
 
     public VentaDTO(Venta venta) {
         this.id = venta.getId();
         this.cantidad = venta.getCantidad();
         this.total = venta.getTotal();
         this.fecha = venta.getFecha();
+        this.estado = venta.getEstado();
+        this.direccionEnvio = venta.getDireccionEnvio();
+        this.telefonoCliente = venta.getTelefonoCliente();
+        this.fechaEnvioProgramada = venta.getFechaEnvioProgramada();
+        this.horaEnvioProgramada = venta.getHoraEnvioProgramada();
 
-        // --- 👇 SOLUCIÓN A "USUARIO ELIMINADO" ---
-        if (venta.getUsuario() != null) {
-            // 4. CREAR EL NUEVO OBJETO DTO DE USUARIO
-            this.usuario = new UsuarioDTO(venta.getUsuario()); 
-        } else {
-            this.usuario = null;
-        }
+        // Mapeo de Usuario
+        this.usuario = venta.getUsuario() != null ? new UsuarioDTO(venta.getUsuario()) : null;
 
-        // Esto ya estaba correcto
-        if (venta.getProducto() != null) {
-            this.producto = new ProductoDTO(venta.getProducto());
-        } else {
-            this.producto = null; 
-        }
+        // Mapeo de Producto
+        this.producto = venta.getProducto() != null ? new ProductoDTO(venta.getProducto()) : null;
     }
 
-    // --- Getters (Actualizados) ---
+    // --- Getters ---
     public Long getId() { return id; }
-    public UsuarioDTO getUsuario() { return usuario; } // <-- 5. ACTUALIZAR GETTER
+    public UsuarioDTO getUsuario() { return usuario; }
     public ProductoDTO getProducto() { return producto; }
     public Integer getCantidad() { return cantidad; }
     public BigDecimal getTotal() { return total; }
     public LocalDateTime getFecha() { return fecha; }
+    public String getEstado() { return estado; }
+    public String getDireccionEnvio() { return direccionEnvio; }
+    public String getTelefonoCliente() { return telefonoCliente; }
+    public String getFechaEnvioProgramada() { return fechaEnvioProgramada; }
+    public String getHoraEnvioProgramada() { return horaEnvioProgramada; }
 
     
-    // --- DTO Interno de Producto (sin cambios) ---
+    // --- DTO Interno de Producto ---
     public static class ProductoDTO {
         private Long id;
         private String nombre;
-        private String descripcion;
         private BigDecimal precio;
-        private Integer stock;
         private String categoria;
 
         public ProductoDTO(Producto producto) {
             this.id = producto.getId();
-            this.nombre = producto.getNombre(); // Tu entidad Producto usa getNombre()
-            this.descripcion = producto.getDescripcion();
+            this.nombre = producto.getNombre();
             this.precio = producto.getPrecio();
-            this.stock = producto.getStock();
             this.categoria = producto.getCategoria();
         }
 
-        // Getters del ProductoDTO
         public Long getId() { return id; }
         public String getNombre() { return nombre; }
-        public String getDescripcion() { return descripcion; }
         public BigDecimal getPrecio() { return precio; }
-        public Integer getStock() { return stock; }
         public String getCategoria() { return categoria; }
     }
 
-    // --- 6. AÑADIR EL DTO INTERNO DE USUARIO (NUEVO) ---
+    // --- DTO Interno de Usuario (AQUÍ ESTÁ LA CORRECCIÓN) ---
     public static class UsuarioDTO {
         private Long id;
         private String nombre;
         private String email;
+        private String telefono; // 👈 1. AÑADIDO: Campo para guardar el teléfono
 
         public UsuarioDTO(Usuario usuario) {
             this.id = usuario.getId();
-            // Asumimos que tu entidad Usuario también usa getNombre()
             this.nombre = usuario.getNombre(); 
             this.email = usuario.getEmail();
+            this.telefono = usuario.getTelefono(); // 👈 2. AÑADIDO: Asignamos el valor de la entidad al DTO
         }
 
         public Long getId() { return id; }
         public String getNombre() { return nombre; }
         public String getEmail() { return email; }
+        public String getTelefono() { return telefono; } // 👈 3. AÑADIDO: Getter para que se envíe en el JSON
     }
 }

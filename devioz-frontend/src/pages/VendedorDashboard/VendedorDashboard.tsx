@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import Swal from "sweetalert2";
+// import Swal from "sweetalert2"; // Ya no se usa aquí, el modal lo maneja
 import VendedorHeader, { Notificacion } from "./VendedorHeader";
 import VendedorNotificationModal from "./VendedorNotificationModal";
 import VendedorProductsTable, { VendedorProducto } from "./VendedorProductsTable";
-import VendedorAgendarModal, { PedidoAgendado } from "./VendedorAgendarModal"; // <-- CORRECCIÓN: Solo importamos lo que usamos
+import VendedorAgendarModal, { PedidoPendiente } from "./VendedorAgendarModal"; // Importamos la interfaz correcta
 import api from "../../api/axiosConfig";
 
 const VendedorDashboard: React.FC = () => {
@@ -13,11 +13,14 @@ const VendedorDashboard: React.FC = () => {
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [notificacionAbierta, setNotificacionAbierta] = useState<Notificacion | null>(null);
   const [tab, setTab] = useState("pedidos");
-  const [agendando, setAgendando] = useState<any | null>(null);
+  
+  // Estado para el modal (tipo PedidoPendiente o null)
+  const [agendando, setAgendando] = useState<PedidoPendiente | null>(null);
 
   const userStr = localStorage.getItem("user");
   const userObj = userStr ? JSON.parse(userStr) : { nombre: "Vendedor" };
 
+  // Función para cargar datos (Productos y Ventas)
   const fetchData = async () => {
     try {
       const [prodRes, ventasRes] = await Promise.all([
@@ -28,6 +31,7 @@ const VendedorDashboard: React.FC = () => {
       setProductos(prodRes.data);
       setVentasReales(ventasRes.data);
 
+      // Generar notificaciones de stock bajo
       const nuevasNotificaciones = prodRes.data
         .filter((p: any) => p.stock < 10)
         .map((p: any, index: number) => ({
@@ -48,7 +52,7 @@ const VendedorDashboard: React.FC = () => {
     fetchData();
   }, []);
 
-  // Filtramos las ventas para las columnas
+  // Filtros
   const pedidosPendientes = ventasReales.filter(v => !v.estado || v.estado === "PENDIENTE");
   const pedidosAgendados = ventasReales.filter(v => v.estado === "AGENDADO");
 
@@ -61,32 +65,17 @@ const VendedorDashboard: React.FC = () => {
     window.location.href = "/productos";
   };
 
-  const handleSaveAgendamiento = async (datosAgendado: PedidoAgendado) => {
-    try {
-      await api.put(`/ventas/${datosAgendado.id}/agendar`, {
-        direccion: datosAgendado.direccion,
-        fecha: datosAgendado.fechaEnvio
-      });
-
-      Swal.fire("✅ Envío Agendado", "Datos guardados en la base de datos.", "success");
-      setAgendando(null);
-      fetchData(); 
-
-    } catch (error) {
-      console.error(error);
-      Swal.fire("Error", "No se pudo agendar.", "error");
-    }
-  };
-
+  // 👇 FUNCIÓN CLAVE: Prepara los datos para el Modal
   const abrirModalAgendar = (ventaReal: any) => {
-    // Intentamos obtener el email de varias formas posibles según venga del backend
-    const emailCliente = ventaReal.usuario?.email || ventaReal.usuarioNombre || "Cliente";
-    
     setAgendando({
       id: ventaReal.id,
       productoNombre: ventaReal.producto?.nombre,
       cantidad: ventaReal.cantidad,
-      clienteEmail: emailCliente
+      // Datos del Cliente
+      clienteEmail: ventaReal.usuario?.email || ventaReal.usuarioNombre || "No registrado",
+      clienteNombre: ventaReal.usuario?.nombre || "Cliente", // Nuevo campo requerido
+      // ✅ AQUÍ PASAMOS EL TELÉFONO (Prioridad: Guardado > Perfil Usuario)
+      clienteTelefono: ventaReal.telefonoCliente || ventaReal.usuario?.telefono 
     });
   };
 
@@ -101,6 +90,7 @@ const VendedorDashboard: React.FC = () => {
       />
 
       <div className="max-w-7xl mx-auto px-6 py-6">
+        {/* Pestañas */}
         <div className="flex flex-wrap justify-center gap-3 mb-6">
           <button onClick={() => setTab("pedidos")} className={`px-5 py-2 rounded-lg transition ${tab === "pedidos" ? "bg-teal-600 text-white" : "bg-white hover:bg-gray-100 border"}`}>Gestión de Pedidos</button>
           <button onClick={() => setTab("productos")} className={`px-5 py-2 rounded-lg transition ${tab === "productos" ? "bg-teal-600 text-white" : "bg-white hover:bg-gray-100 border"}`}>Inventario</button>
@@ -111,19 +101,19 @@ const VendedorDashboard: React.FC = () => {
           {tab === "pedidos" && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               
-              {/* PENDIENTES */}
+              {/* TARJETA PENDIENTES */}
               <div className="bg-white p-6 rounded-xl shadow-md">
                 <h2 className="text-xl font-semibold text-teal-600 mb-4">Pedidos por Enviar ({pedidosPendientes.length})</h2>
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {pedidosPendientes.length === 0 && <p className="text-gray-500">No hay pedidos pendientes.</p>}
                   {pedidosPendientes.map(v => (
-                    <div key={v.id} className="p-4 border rounded-lg">
+                    <div key={v.id} className="p-4 border rounded-lg hover:bg-gray-50 transition">
                       <p className="font-semibold">{v.producto?.nombre} (x{v.cantidad})</p>
-                      <p className="text-sm text-gray-600">Cliente: {v.usuario?.email || v.usuario?.nombre}</p>
-                      <p className="text-xs text-gray-400">{new Date(v.fecha).toLocaleDateString()}</p>
+                      <p className="text-sm text-gray-600">Cliente: {v.usuario?.nombre || "Desconocido"}</p>
+                      <p className="text-xs text-gray-400">Fecha: {new Date(v.fecha).toLocaleDateString()}</p>
                       <button 
                         onClick={() => abrirModalAgendar(v)}
-                        className="mt-2 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-sm"
+                        className="mt-2 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-sm w-full sm:w-auto"
                       >
                         Agendar Envío
                       </button>
@@ -132,7 +122,7 @@ const VendedorDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* AGENDADOS */}
+              {/* TARJETA AGENDADOS */}
               <div className="bg-white p-6 rounded-xl shadow-md">
                 <h2 className="text-xl font-semibold text-teal-600 mb-4">Pedidos Agendados ({pedidosAgendados.length})</h2>
                 <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -141,7 +131,10 @@ const VendedorDashboard: React.FC = () => {
                     <div key={v.id} className="p-4 border rounded-lg bg-green-50">
                       <p className="font-semibold">{v.producto?.nombre}</p>
                       <p className="text-sm text-gray-700">Destino: <strong>{v.direccionEnvio}</strong></p>
-                      <p className="text-sm text-gray-700">Fecha Prog.: {v.fechaEnvioProgramada}</p>
+                      <p className="text-sm text-gray-700">
+                        Programado: {v.fechaEnvioProgramada} - {v.horaEnvioProgramada || "Hora no def."}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">Cliente: {v.usuario?.nombre}</p>
                     </div>
                   ))}
                 </div>
@@ -155,14 +148,25 @@ const VendedorDashboard: React.FC = () => {
         </motion.div>
       </div>
 
-      {notificacionAbierta && <VendedorNotificationModal notificacion={notificacionAbierta} onClose={() => setNotificacionAbierta(null)} />} 
+      {/* MODAL DE NOTIFICACIONES */}
+      {notificacionAbierta && (
+          <VendedorNotificationModal 
+            notificacion={notificacionAbierta} 
+            onClose={() => setNotificacionAbierta(null)} 
+          />
+      )} 
       
+      {/* MODAL DE AGENDAR (Conectado correctamente) */}
       {agendando && (
         <VendedorAgendarModal
           pedido={agendando}
           vendedorNombre={userObj.nombre}
           onClose={() => setAgendando(null)}
-          onSave={handleSaveAgendamiento}
+          onUpdateSuccess={() => {
+            // Esta función se ejecuta cuando el modal guarda con éxito
+            setAgendando(null);
+            fetchData(); // Recargamos la tabla para ver el cambio a "AGENDADO"
+          }}
         />
       )}
     </div>

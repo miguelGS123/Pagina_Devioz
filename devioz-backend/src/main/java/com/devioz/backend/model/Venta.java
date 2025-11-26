@@ -14,11 +14,11 @@ public class Venta {
 
     @ManyToOne
     @JoinColumn(name = "usuario_id", nullable = false)
-    private Usuario usuario;
+    private Usuario usuario; // El cliente/comprador
 
     @ManyToOne
     @JoinColumn(name = "producto_id", nullable = false)
-    private Producto producto;
+    private Producto producto; // El producto vendido
 
     @Column(nullable = false)
     private Integer cantidad;
@@ -29,14 +29,23 @@ public class Venta {
     @Column(nullable = false)
     private LocalDateTime fecha = LocalDateTime.now();
 
-    // --- NUEVOS CAMPOS DE LOGÍSTICA ---
+    // --- CAMPOS DE LOGÍSTICA ---
     
     @Column(length = 20)
     private String estado = "PENDIENTE"; // "PENDIENTE" o "AGENDADO"
 
+    @Column(length = 255) 
     private String direccionEnvio; 
     
-    private String fechaEnvioProgramada;
+    private String fechaEnvioProgramada; // Usado para agendamiento (Ej: "26/11/2025")
+    
+    // --- CAMPOS AÑADIDOS PARA EL NUEVO FLUJO ---
+    
+    // 1. Teléfono para contacto directo con el cliente (no dependemos de la tabla Usuario)
+    private String telefonoCliente; 
+    
+    // 2. Hora de envío (Ej: "14:00 - 15:00" o "14:00")
+    private String horaEnvioProgramada; 
 
     // --- GETTERS Y SETTERS COMPLETOS ---
 
@@ -66,4 +75,11 @@ public class Venta {
 
     public String getFechaEnvioProgramada() { return fechaEnvioProgramada; }
     public void setFechaEnvioProgramada(String fechaEnvioProgramada) { this.fechaEnvioProgramada = fechaEnvioProgramada; }
+    
+    // Getters y Setters de los campos nuevos
+    public String getTelefonoCliente() { return telefonoCliente; }
+    public void setTelefonoCliente(String telefonoCliente) { this.telefonoCliente = telefonoCliente; }
+    
+    public String getHoraEnvioProgramada() { return horaEnvioProgramada; }
+    public void setHoraEnvioProgramada(String horaEnvioProgramada) { this.horaEnvioProgramada = horaEnvioProgramada; }
 }
