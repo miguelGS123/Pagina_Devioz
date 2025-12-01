@@ -30,37 +30,52 @@ public class SecurityConfig {
         this.jwtFilter = jwtFilter;
     }
 
-    // 1. Encriptador de contraseñas
+    // 1. Encriptador
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // 2. Gestor de Autenticación
+    // 2. Authentication Manager
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
 
-    // 3. Configuración CORS GLOBAL (Permite conexión con Hostinger y otros)
+    // 3. CORS GLOBAL — CORREGIDO PARA PRODUCCIÓN
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
-        // ✅ CAMBIO: Permitir TODO (*) para evitar bloqueos de Hostinger
-        configuration.setAllowedOrigins(List.of("*")); 
-        
-        // Métodos permitidos
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        
-        // Headers necesarios
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control", "Pragma", "Expires", "X-Requested-With"));
-        
-        // ⚠️ IMPORTANTE: Si usas origins "*", allowCredentials NO puede ser true en navegadores modernos.
-        // Si necesitas credentials (cookies), debes poner la lista explícita de dominios.
-        // Como usas JWT (Header Authorization), generalmente NO necesitas credentials=true.
-        configuration.setAllowCredentials(false); 
-        
+
+        // 🔥 Dominios permitidos (Frontend en Hostinger)
+        configuration.setAllowedOrigins(Arrays.asList(
+                "https://devioz.com",
+                "https://www.devioz.com"
+        ));
+
+        // 🔥 Métodos permitidos
+        configuration.setAllowedMethods(Arrays.asList(
+                "GET", "POST", "PUT", "DELETE", "OPTIONS"
+        ));
+
+        // 🔥 Headers permitidos (Axios + JWT + SPRING)
+        configuration.setAllowedHeaders(Arrays.asList(
+                "Authorization",
+                "Content-Type",
+                "Cache-Control",
+                "Pragma",
+                "Expires",
+                "X-Requested-With",
+                "Accept",
+                "Origin"
+        ));
+
+        // 🔥 Headers expuestos
+        configuration.setExposedHeaders(List.of("Authorization"));
+
+        // 🔥 Necesario para Authorization: Bearer xxx
+        configuration.setAllowCredentials(true);
+
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -68,52 +83,57 @@ public class SecurityConfig {
         return source;
     }
 
-    // 4. Cadena de Filtros de Seguridad
+    // 4. FILTROS DE SEGURIDAD
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // Activar CORS usando la configuración de arriba
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                
-                // === ZONA PÚBLICA (Sin Token) ===
-                .requestMatchers("/auth/**").permitAll()
-                .requestMatchers("/api/formulario/**").permitAll()
-                .requestMatchers("/api/chat/**").permitAll()
-                .requestMatchers("/api/hello").permitAll()
-                .requestMatchers("/uploads/**").permitAll() 
-                .requestMatchers("/error").permitAll()
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
 
-                // === ZONA DE PRODUCTOS ===
-                .requestMatchers("/api/productos/mis-productos").hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
-                .requestMatchers(HttpMethod.PUT, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
-                .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasAuthority("ROL_ADMIN")
-                
-                // === ZONA DE USUARIOS ===
-                .requestMatchers(HttpMethod.GET, "/api/usuarios/**").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/usuarios").hasAuthority("ROL_ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/usuarios/**").hasAuthority("ROL_ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/usuarios/**").hasAuthority("ROL_ADMIN")
+                        // === Rutas Públicas ===
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/api/formulario/**").permitAll()
+                        .requestMatchers("/api/chat/**").permitAll()
+                        .requestMatchers("/api/hello").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/error").permitAll()
 
-                // === ZONA DE VENTAS ===
-                .requestMatchers("/api/ventas/mis-ventas").hasAnyAuthority("ROL_USUARIO", "ROL_VENDEDOR", "ROL_ADMIN") // Amplié permisos para evitar errores raros
-                .requestMatchers("/api/ventas/checkout").authenticated() // ✅ Checkout para cualquier autenticado
-                .requestMatchers("/api/ventas/vendedor").hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
-                .requestMatchers("/api/ventas/*/agendar").hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/ventas").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
-                .requestMatchers(HttpMethod.POST, "/api/ventas/**").hasAuthority("ROL_USUARIO")
-                .requestMatchers(HttpMethod.DELETE, "/api/ventas/**").hasAnyAuthority("ROL_ADMIN", "ROL_USUARIO")
+                        // === PRODUCTOS ===
+                        .requestMatchers("/api/productos/mis-productos").hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
+                        .requestMatchers(HttpMethod.PUT, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasAuthority("ROL_ADMIN")
 
-                // === CANDADO FINAL ===
-                .anyRequest().authenticated()
-            )
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                        // === USUARIOS ===
+                        .requestMatchers(HttpMethod.GET, "/api/usuarios/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/usuarios").hasAuthority("ROL_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/usuarios/**").hasAuthority("ROL_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/usuarios/**").hasAuthority("ROL_ADMIN")
 
-        http.setSharedObject(GrantedAuthorityDefaults.class, new GrantedAuthorityDefaults(""));
+                        // === VENTAS ===
+                        .requestMatchers("/api/ventas/mis-ventas")
+                                .hasAnyAuthority("ROL_USUARIO", "ROL_VENDEDOR", "ROL_ADMIN")
+                        .requestMatchers("/api/ventas/checkout").authenticated()
+                        .requestMatchers("/api/ventas/vendedor")
+                                .hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
+                        .requestMatchers("/api/ventas/*/agendar")
+                                .hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/ventas")
+                                .hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
+                        .requestMatchers(HttpMethod.POST, "/api/ventas/**").hasAuthority("ROL_USUARIO")
+                        .requestMatchers(HttpMethod.DELETE, "/api/ventas/**")
+                                .hasAnyAuthority("ROL_ADMIN", "ROL_USUARIO")
+
+                        // === Cualquier Otra ===
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+        http.setSharedObject(GrantedAuthorityDefaults.class,
+                new GrantedAuthorityDefaults(""));
 
         return http.build();
     }
