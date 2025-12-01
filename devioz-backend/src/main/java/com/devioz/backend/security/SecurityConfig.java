@@ -30,24 +30,24 @@ public class SecurityConfig {
         this.jwtFilter = jwtFilter;
     }
 
-    // 1. Encriptador
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // 2. Authentication Manager
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
 
-    // 3. CORS GLOBAL — CORREGIDO PARA PRODUCCIÓN
+    // ===============================
+    // 🔥 CORS GLOBAL — CONFIG CORRECTA
+    // ===============================
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 🔥 Dominios permitidos (Frontend en Hostinger)
+        // 🔥 Dominios permitidos
         configuration.setAllowedOrigins(Arrays.asList(
                 "https://devioz.com",
                 "https://www.devioz.com"
@@ -58,24 +58,13 @@ public class SecurityConfig {
                 "GET", "POST", "PUT", "DELETE", "OPTIONS"
         ));
 
-        // 🔥 Headers permitidos (Axios + JWT + SPRING)
-        configuration.setAllowedHeaders(Arrays.asList(
-                "Authorization",
-                "Content-Type",
-                "Cache-Control",
-                "cache-control",
-                "Pragma",
-                "Expires",
-                "X-Requested-With",
-                "Accept",
-                "Origin",
-                "x-cache-control"
-        ));
+        // 🔥 Headers permitidos (super importante para roles Admin/Vendedor)
+        configuration.addAllowedHeader("*");
 
-        // 🔥 Headers expuestos
+        // 🔥 Exponer Authorization al frontend
         configuration.setExposedHeaders(List.of("Authorization"));
 
-        // 🔥 Necesario para Authorization: Bearer xxx
+        // 🔥 Necesario para enviar cookies / tokens
         configuration.setAllowCredentials(true);
 
         configuration.setMaxAge(3600L);
@@ -85,16 +74,19 @@ public class SecurityConfig {
         return source;
     }
 
-    // 4. FILTROS DE SEGURIDAD
+    // ======================================================
+    // 🔥 REGLAS DE SEGURIDAD Y FILTROS JWT (NO CAMBIA NADA)
+    // ======================================================
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
 
-                        // === Rutas Públicas ===
+                        // Public
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/api/formulario/**").permitAll()
                         .requestMatchers("/api/chat/**").permitAll()
@@ -102,20 +94,20 @@ public class SecurityConfig {
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/error").permitAll()
 
-                        // === PRODUCTOS ===
+                        // Productos
                         .requestMatchers("/api/productos/mis-productos").hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
                         .requestMatchers(HttpMethod.PUT, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
                         .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasAuthority("ROL_ADMIN")
 
-                        // === USUARIOS ===
+                        // Usuarios
                         .requestMatchers(HttpMethod.GET, "/api/usuarios/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/usuarios").hasAuthority("ROL_ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/usuarios/**").hasAuthority("ROL_ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/usuarios/**").hasAuthority("ROL_ADMIN")
 
-                        // === VENTAS ===
+                        // Ventas
                         .requestMatchers("/api/ventas/mis-ventas")
                                 .hasAnyAuthority("ROL_USUARIO", "ROL_VENDEDOR", "ROL_ADMIN")
                         .requestMatchers("/api/ventas/checkout").authenticated()
@@ -129,13 +121,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/ventas/**")
                                 .hasAnyAuthority("ROL_ADMIN", "ROL_USUARIO")
 
-                        // === Cualquier Otra ===
+                        // Todo lo demás
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
-        http.setSharedObject(GrantedAuthorityDefaults.class,
-                new GrantedAuthorityDefaults(""));
+        http.setSharedObject(GrantedAuthorityDefaults.class, new GrantedAuthorityDefaults(""));
 
         return http.build();
     }
