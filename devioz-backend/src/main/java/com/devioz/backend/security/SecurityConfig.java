@@ -63,11 +63,13 @@ public class SecurityConfig {
                 "Authorization",
                 "Content-Type",
                 "Cache-Control",
+                "cache-control",
                 "Pragma",
                 "Expires",
                 "X-Requested-With",
                 "Accept",
-                "Origin"
+                "Origin",
+                "x-cache-control"
         ));
 
         // 🔥 Headers expuestos
