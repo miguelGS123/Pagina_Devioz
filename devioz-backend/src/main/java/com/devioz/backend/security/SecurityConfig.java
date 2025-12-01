@@ -41,7 +41,7 @@ public class SecurityConfig {
     }
 
     // ===============================
-    // 🔥 CORS GLOBAL — CONFIG CORRECTA
+    // 🔥 CORS COMPLETO Y DEFINITIVO
     // ===============================
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -54,28 +54,40 @@ public class SecurityConfig {
         ));
 
         // 🔥 Métodos permitidos
-        configuration.setAllowedMethods(Arrays.asList(
+        configuration.setAllowedMethods(List.of(
                 "GET", "POST", "PUT", "DELETE", "OPTIONS"
         ));
 
-        // 🔥 Headers permitidos (super importante para roles Admin/Vendedor)
-        configuration.addAllowedHeader("*");
+        // 🔥 Headers permitidos — INCLUYE TODOS LOS NECESARIOS PARA CHROME
+        configuration.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "Cache-Control",
+                "Pragma",
+                "Expires",
+                "X-Requested-With",
+                "Accept",
+                "Origin",
+                "*"
+        ));
 
-        // 🔥 Exponer Authorization al frontend
+        // 🔥 Headers expuestos
         configuration.setExposedHeaders(List.of("Authorization"));
 
-        // 🔥 Necesario para enviar cookies / tokens
+        // 🔥 Necesario para Bearer Tokens en Authorization
         configuration.setAllowCredentials(true);
 
+        // Cache del preflight
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+
         return source;
     }
 
     // ======================================================
-    // 🔥 REGLAS DE SEGURIDAD Y FILTROS JWT (NO CAMBIA NADA)
+    // 🔥 REGLAS DE SEGURIDAD + FILTRO JWT (IGUAL QUE TU CÓDIGO)
     // ======================================================
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
