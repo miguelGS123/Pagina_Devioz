@@ -40,44 +40,47 @@ public class SecurityConfig {
         return authConfig.getAuthenticationManager();
     }
 
-    // ===============================
-    // 🔥 CORS COMPLETO Y DEFINITIVO
-    // ===============================
+    // ============================================================
+    // 🔥 CORS DEFINITIVO — COMPATIBLE CON AXIOS Y CHROME
+    // ============================================================
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 🔥 Dominios permitidos
-        configuration.setAllowedOrigins(Arrays.asList(
+        configuration.setAllowedOrigins(List.of(
                 "https://devioz.com",
                 "https://www.devioz.com"
         ));
 
-        // 🔥 Métodos permitidos
         configuration.setAllowedMethods(List.of(
                 "GET", "POST", "PUT", "DELETE", "OPTIONS"
         ));
 
-        // 🔥 Headers permitidos — INCLUYE TODOS LOS NECESARIOS PARA CHROME
+        // 🔥 HEADERS EN MINÚSCULA Y MAYÚSCULA (para Chrome y Axios)
         configuration.setAllowedHeaders(List.of(
+                "authorization",
                 "Authorization",
+                "content-type",
                 "Content-Type",
+                "cache-control",
                 "Cache-Control",
+                "pragma",
                 "Pragma",
+                "expires",
                 "Expires",
+                "x-requested-with",
                 "X-Requested-With",
-                "Accept",
+                "origin",
                 "Origin",
+                "accept",
+                "Accept",
                 "*"
         ));
 
-        // 🔥 Headers expuestos
+        // Expone Authorization
         configuration.setExposedHeaders(List.of("Authorization"));
 
-        // 🔥 Necesario para Bearer Tokens en Authorization
         configuration.setAllowCredentials(true);
-
-        // Cache del preflight
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -87,7 +90,7 @@ public class SecurityConfig {
     }
 
     // ======================================================
-    // 🔥 REGLAS DE SEGURIDAD + FILTRO JWT (IGUAL QUE TU CÓDIGO)
+    // 🔥 REGLAS DE SEGURIDAD + JWT
     // ======================================================
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -98,7 +101,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
 
-                        // Public
+                        // PUBLIC
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/api/formulario/**").permitAll()
                         .requestMatchers("/api/chat/**").permitAll()
@@ -106,34 +109,29 @@ public class SecurityConfig {
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/error").permitAll()
 
-                        // Productos
+                        // PRODUCTOS
                         .requestMatchers("/api/productos/mis-productos").hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
                         .requestMatchers(HttpMethod.PUT, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
                         .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasAuthority("ROL_ADMIN")
 
-                        // Usuarios
+                        // USUARIOS
                         .requestMatchers(HttpMethod.GET, "/api/usuarios/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/usuarios").hasAuthority("ROL_ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/usuarios/**").hasAuthority("ROL_ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/usuarios/**").hasAuthority("ROL_ADMIN")
 
-                        // Ventas
-                        .requestMatchers("/api/ventas/mis-ventas")
-                                .hasAnyAuthority("ROL_USUARIO", "ROL_VENDEDOR", "ROL_ADMIN")
+                        // VENTAS
+                        .requestMatchers("/api/ventas/mis-ventas").hasAnyAuthority("ROL_USUARIO", "ROL_VENDEDOR", "ROL_ADMIN")
                         .requestMatchers("/api/ventas/checkout").authenticated()
-                        .requestMatchers("/api/ventas/vendedor")
-                                .hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
-                        .requestMatchers("/api/ventas/*/agendar")
-                                .hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/ventas")
-                                .hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
+                        .requestMatchers("/api/ventas/vendedor").hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
+                        .requestMatchers("/api/ventas/*/agendar").hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/ventas").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
                         .requestMatchers(HttpMethod.POST, "/api/ventas/**").hasAuthority("ROL_USUARIO")
-                        .requestMatchers(HttpMethod.DELETE, "/api/ventas/**")
-                                .hasAnyAuthority("ROL_ADMIN", "ROL_USUARIO")
+                        .requestMatchers(HttpMethod.DELETE, "/api/ventas/**").hasAnyAuthority("ROL_ADMIN", "ROL_USUARIO")
 
-                        // Todo lo demás
+                        // RESTO
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
