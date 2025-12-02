@@ -13,12 +13,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -40,65 +34,16 @@ public class SecurityConfig {
         return authConfig.getAuthenticationManager();
     }
 
-    // ============================================================
-    // 🔥 CORS DEFINITIVO — COMPATIBLE CON AXIOS Y CHROME
-    // ============================================================
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-
-        configuration.setAllowedOrigins(List.of(
-                "https://devioz.com",
-                "https://www.devioz.com"
-        ));
-
-        configuration.setAllowedMethods(List.of(
-                "GET", "POST", "PUT", "DELETE", "OPTIONS"
-        ));
-
-        // 🔥 HEADERS EN MINÚSCULA Y MAYÚSCULA (para Chrome y Axios)
-        configuration.setAllowedHeaders(List.of(
-                "authorization",
-                "Authorization",
-                "content-type",
-                "Content-Type",
-                "cache-control",
-                "Cache-Control",
-                "pragma",
-                "Pragma",
-                "expires",
-                "Expires",
-                "x-requested-with",
-                "X-Requested-With",
-                "origin",
-                "Origin",
-                "accept",
-                "Accept",
-                "*"
-        ));
-
-        // Expone Authorization
-        configuration.setExposedHeaders(List.of("Authorization"));
-
-        configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-
-        return source;
-    }
-
-    // ======================================================
-    // 🔥 REGLAS DE SEGURIDAD + JWT
-    // ======================================================
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // ❌ DESACTIVAMOS CORS DE SPRING (NGINX LO MANEJA)
+                .cors(cors -> cors.disable())
+
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
                 .authorizeHttpRequests(auth -> auth
 
                         // PUBLIC
@@ -134,6 +79,7 @@ public class SecurityConfig {
                         // RESTO
                         .anyRequest().authenticated()
                 )
+
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         http.setSharedObject(GrantedAuthorityDefaults.class, new GrantedAuthorityDefaults(""));
