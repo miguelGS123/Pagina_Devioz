@@ -29,12 +29,13 @@ public class SecurityConfig {
         this.jwtFilter = jwtFilter;
     }
     
-    // 🚀 CAMBIO 1: AGREGAR EL BEAN DE CONFIGURACIÓN CORS
+    // 🚀 CAMBIO CRÍTICO: Configuración CORS para resolver el error IllegalArgumentException
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Permitir todos los orígenes para asegurar la conexión con el Frontend
-        configuration.setAllowedOrigins(Arrays.asList("*")); 
+        
+        // CORRECCIÓN: Usar el dominio específico para que funcione con allowCredentials(true)
+        configuration.setAllowedOrigins(Arrays.asList("https://devioz.com")); 
         
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*")); 
