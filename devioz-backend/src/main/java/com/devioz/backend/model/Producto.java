@@ -36,6 +36,10 @@ public class Producto {
     @Column(nullable = false, length = 50)
     private String categoria = "General";
 
+    // 🚀 CAMBIO CRÍTICO: Añadir el campo de estado para el Borrado Lógico
+    @Column(nullable = false)
+    private boolean activo = true; 
+
     // ======================
     // Getters y Setters
     // ======================
@@ -103,5 +107,14 @@ public class Producto {
 
     public void setCategoria(String categoria) {
         this.categoria = categoria;
+    }
+    
+    // 🚀 CAMBIO CRÍTICO: GETTER y SETTER para el estado 'activo'
+    public boolean isActivo() {
+        return activo;
+    }
+
+    public void setActivo(boolean activo) {
+        this.activo = activo;
     }
 }

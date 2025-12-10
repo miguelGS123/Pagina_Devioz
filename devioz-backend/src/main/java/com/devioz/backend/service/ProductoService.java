@@ -1,9 +1,9 @@
 package com.devioz.backend.service;
 
 import com.devioz.backend.model.Producto;
-import com.devioz.backend.model.Usuario; // Importar Usuario
+import com.devioz.backend.model.Usuario; 
 import com.devioz.backend.repository.ProductoRepository;
-import com.devioz.backend.repository.UsuarioRepository; // Importar Repo Usuario
+import com.devioz.backend.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,24 +17,26 @@ public class ProductoService {
     private ProductoRepository productoRepository;
     
     @Autowired
-    private UsuarioRepository usuarioRepository; // Para asignar el creador
+    private UsuarioRepository usuarioRepository;
 
+    // 🚀 CAMBIO CRÍTICO 1: Usar el filtro Activo=true para la lista pública
     public List<Producto> getAllProductos() {
-        return productoRepository.findAll();
+        return productoRepository.findAllByActivoTrue();
     }
 
-    // --- 👇 NUEVO MÉTODO: OBTENER PRODUCTOS DE UN VENDEDOR ---
+    // --- 👇 MÉTODO: OBTENER PRODUCTOS DE UN VENDEDOR (Activo=true) ---
     public List<Producto> getProductosByVendedor(String email) {
         // Buscamos al usuario por su email (que viene del Token)
         Usuario vendedor = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Vendedor no encontrado"));
         
-        // Devolvemos solo sus productos
-        return productoRepository.findByCreadoPorId(vendedor.getId());
+        // 🚀 CAMBIO CRÍTICO 2: Usar el nuevo método filtrado por activo
+        return productoRepository.findByCreadoPorIdAndActivoTrue(vendedor.getId());
     }
 
     public Optional<Producto> getProductoById(Long id) {
-        return productoRepository.findById(id);
+        // Aunque no es estrictamente necesario, filtramos por activo=true para consistencia
+        return productoRepository.findById(id).filter(Producto::isActivo);
     }
 
     // --- 👇 MÉTODO ACTUALIZADO: GUARDAR PRODUCTO CON DUEÑO ---
@@ -49,7 +51,14 @@ public class ProductoService {
         return productoRepository.save(producto);
     }
 
+    // 🚀 CAMBIO CRÍTICO 3: Implementación del Borrado Lógico (Soft Delete)
     public void deleteProducto(Long id) {
-        productoRepository.deleteById(id);
+        Producto producto = productoRepository.findById(id)
+                // Utilizamos una excepción genérica que ya existe en Java
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado con ID: " + id)); 
+
+        // Marcar el producto como inactivo en lugar de borrarlo físicamente
+        producto.setActivo(false);
+        productoRepository.save(producto); 
     }
 }
