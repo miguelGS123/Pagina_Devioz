@@ -150,7 +150,7 @@ const ProductsPage: React.FC = () => {
         onQtyChange={changeQty}
         onRemove={removeItem}
         total={total}
-        onCheckout={() => alert("Checkout demo 🚀")}
+        onCheckout={() => alert("proximamente")}
       />
     </div>
   );
