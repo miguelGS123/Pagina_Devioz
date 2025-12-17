@@ -13,11 +13,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-// NUEVAS IMPORTACIONES REQUERIDAS PARA CORS
-import org.springframework.web.cors.CorsConfiguration; 
-import org.springframework.web.cors.CorsConfigurationSource; 
+
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import java.util.Arrays; 
+
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -28,47 +29,64 @@ public class SecurityConfig {
     public SecurityConfig(JwtFilter jwtFilter) {
         this.jwtFilter = jwtFilter;
     }
-    
-    // 🚀 CAMBIO CRÍTICO: Configuración CORS para resolver el error IllegalArgumentException
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        
-        // CORRECCIÓN: Usar el dominio específico para que funcione con allowCredentials(true)
-        configuration.setAllowedOrigins(Arrays.asList("https://devioz.com")); 
-        
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*")); 
-        configuration.setAllowCredentials(true);
-        
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
 
+    // 🔐 PASSWORD ENCODER
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    // 🔐 AUTH MANAGER
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
 
+    // 🌍 CONFIGURACIÓN CORS GLOBAL (OBLIGATORIA PARA FRONTEND)
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        // ⚠️ Dominio exacto (obligatorio con allowCredentials = true)
+        configuration.setAllowedOrigins(Arrays.asList(
+                "https://devioz.com"
+        ));
+
+        configuration.setAllowedMethods(Arrays.asList(
+                "GET", "POST", "PUT", "DELETE", "OPTIONS"
+        ));
+
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    // 🛡️ SECURITY FILTER CHAIN
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                // 🚀 CAMBIO 2: ELIMINAR cors.disable() y USAR EL BEAN CREADO
+                // 🌍 HABILITAR CORS CON EL BEAN DEFINIDO
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
+                // ❌ CSRF DESHABILITADO (API REST)
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
+                // 🔒 API SIN SESIONES
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                // 🔐 AUTORIZACIONES
                 .authorizeHttpRequests(auth -> auth
 
-                        // PUBLIC
+                        // ✅ CORS PREFLIGHT (CRÍTICO)
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // 🔓 ENDPOINTS PÚBLICOS
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/api/formulario/**").permitAll()
                         .requestMatchers("/api/chat/**").permitAll()
@@ -76,35 +94,69 @@ public class SecurityConfig {
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/error").permitAll()
 
-                        // PRODUCTOS
-                        .requestMatchers("/api/productos/mis-productos").hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
-                        .requestMatchers(HttpMethod.PUT, "/api/productos/**").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasAuthority("ROL_ADMIN")
+                        // 🛒 PRODUCTOS
+                        .requestMatchers("/api/productos/mis-productos")
+                        .hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
 
-                        // USUARIOS
-                        .requestMatchers(HttpMethod.GET, "/api/usuarios/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/usuarios").hasAuthority("ROL_ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/usuarios/**").hasAuthority("ROL_ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/usuarios/**").hasAuthority("ROL_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/productos/**")
+                        .permitAll()
 
-                        // VENTAS
-                        .requestMatchers("/api/ventas/mis-ventas").hasAnyAuthority("ROL_USUARIO", "ROL_VENDEDOR", "ROL_ADMIN")
-                        .requestMatchers("/api/ventas/checkout").authenticated()
-                        .requestMatchers("/api/ventas/vendedor").hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
-                        .requestMatchers("/api/ventas/*/agendar").hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/ventas").hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
-                        .requestMatchers(HttpMethod.POST, "/api/ventas/**").hasAuthority("ROL_USUARIO")
-                        .requestMatchers(HttpMethod.DELETE, "/api/ventas/**").hasAnyAuthority("ROL_ADMIN", "ROL_USUARIO")
+                        .requestMatchers(HttpMethod.POST, "/api/productos/**")
+                        .hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
 
-                        // RESTO
+                        .requestMatchers(HttpMethod.PUT, "/api/productos/**")
+                        .hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
+
+                        .requestMatchers(HttpMethod.DELETE, "/api/productos/**")
+                        .hasAuthority("ROL_ADMIN")
+
+                        // 👤 USUARIOS
+                        .requestMatchers(HttpMethod.GET, "/api/usuarios/**")
+                        .authenticated()
+
+                        .requestMatchers(HttpMethod.POST, "/api/usuarios")
+                        .hasAuthority("ROL_ADMIN")
+
+                        .requestMatchers(HttpMethod.PUT, "/api/usuarios/**")
+                        .hasAuthority("ROL_ADMIN")
+
+                        .requestMatchers(HttpMethod.DELETE, "/api/usuarios/**")
+                        .hasAuthority("ROL_ADMIN")
+
+                        // 💰 VENTAS
+                        .requestMatchers("/api/ventas/mis-ventas")
+                        .hasAnyAuthority("ROL_USUARIO", "ROL_VENDEDOR", "ROL_ADMIN")
+
+                        .requestMatchers("/api/ventas/checkout")
+                        .authenticated()
+
+                        .requestMatchers("/api/ventas/vendedor")
+                        .hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
+
+                        .requestMatchers("/api/ventas/*/agendar")
+                        .hasAnyAuthority("ROL_VENDEDOR", "ROL_ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/ventas")
+                        .hasAnyAuthority("ROL_ADMIN", "ROL_VENDEDOR")
+
+                        .requestMatchers(HttpMethod.POST, "/api/ventas/**")
+                        .hasAuthority("ROL_USUARIO")
+
+                        .requestMatchers(HttpMethod.DELETE, "/api/ventas/**")
+                        .hasAnyAuthority("ROL_ADMIN", "ROL_USUARIO")
+
+                        // 🔒 TODO LO DEMÁS
                         .anyRequest().authenticated()
                 )
 
+                // 🔑 FILTRO JWT
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
-        http.setSharedObject(GrantedAuthorityDefaults.class, new GrantedAuthorityDefaults(""));
+        // ❌ Eliminar prefijo ROLE_
+        http.setSharedObject(
+                GrantedAuthorityDefaults.class,
+                new GrantedAuthorityDefaults("")
+        );
 
         return http.build();
     }
