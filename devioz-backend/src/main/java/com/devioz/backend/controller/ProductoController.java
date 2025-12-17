@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -20,6 +21,9 @@ public class ProductoController {
     @Autowired
     private ProductoService productoService;
 
+    // 🔥 DOMINIO PÚBLICO DE LA API (CLAVE PARA IMÁGENES)
+    private static final String PUBLIC_API_URL = "https://api.devioz.com";
+
     // ================================
     //  GET TODOS LOS PRODUCTOS (PÚBLICO)
     // ================================
@@ -29,20 +33,21 @@ public class ProductoController {
     }
 
     // ================================
-    //  GET MIS PRODUCTOS (ADMIN / VENDEDOR ven TODO)
+    //  GET MIS PRODUCTOS
     // ================================
     @GetMapping("/mis-productos")
     public List<Producto> getMisProductos(Authentication authentication) {
 
         String email = authentication.getName();
-        String rol = authentication.getAuthorities().iterator().next().getAuthority();
+        String rol = authentication.getAuthorities()
+                .iterator()
+                .next()
+                .getAuthority();
 
-        // 🔥 ADMIN o VENDEDOR → ven TODOS los productos
         if (rol.equals("ROL_ADMIN") || rol.equals("ROL_VENDEDOR")) {
             return productoService.getAllProductos();
         }
 
-        // 🔥 USUARIO normal → ve solo los productos creados por él (tu lógica original)
         return productoService.getProductosByVendedor(email);
     }
 
@@ -60,11 +65,14 @@ public class ProductoController {
     //  CREAR PRODUCTO
     // ================================
     @PostMapping
-    public ResponseEntity<Producto> createProducto(@RequestBody Producto producto,
-                                                   Authentication authentication) {
+    public ResponseEntity<Producto> createProducto(
+            @RequestBody Producto producto,
+            Authentication authentication
+    ) {
 
         producto.setId(null);
         String email = authentication.getName();
+
         Producto savedProducto = productoService.saveProducto(producto, email);
         return ResponseEntity.ok(savedProducto);
     }
@@ -73,13 +81,16 @@ public class ProductoController {
     //  ACTUALIZAR PRODUCTO
     // ================================
     @PutMapping("/{id}")
-    public ResponseEntity<Producto> updateProducto(@PathVariable Long id,
-                                                   @RequestBody Producto productoDetails) {
+    public ResponseEntity<Producto> updateProducto(
+            @PathVariable Long id,
+            @RequestBody Producto productoDetails
+    ) {
 
         Optional<Producto> productoData = productoService.getProductoById(id);
 
         if (productoData.isPresent()) {
             Producto existing = productoData.get();
+
             existing.setNombre(productoDetails.getNombre());
             existing.setDescripcion(productoDetails.getDescripcion());
             existing.setImagen(productoDetails.getImagen());
@@ -90,6 +101,7 @@ public class ProductoController {
             Producto updated = productoService.saveProducto(existing, null);
             return ResponseEntity.ok(updated);
         }
+
         return ResponseEntity.notFound().build();
     }
 
@@ -106,12 +118,16 @@ public class ProductoController {
     }
 
     // ================================
-    //  SUBIR IMAGEN
+    //  SUBIR IMAGEN (🔥 CORREGIDO)
     // ================================
     @PostMapping("/upload")
-    public ResponseEntity<String> uploadImage(@RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+    public ResponseEntity<String> uploadImage(
+            @RequestParam("file") MultipartFile file
+    ) {
         try {
             String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+
+            // 📁 carpeta montada por Docker + Nginx
             Path uploadPath = Paths.get("uploads");
 
             if (!Files.exists(uploadPath)) {
@@ -119,13 +135,21 @@ public class ProductoController {
             }
 
             Path filePath = uploadPath.resolve(fileName);
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(
+                    file.getInputStream(),
+                    filePath,
+                    StandardCopyOption.REPLACE_EXISTING
+            );
 
-            String publicUrl = "/uploads/" + fileName;
+            // 🔥 URL ABSOLUTA (LA CLAVE)
+            String publicUrl = PUBLIC_API_URL + "/uploads/" + fileName;
+
             return ResponseEntity.ok(publicUrl);
 
         } catch (IOException e) {
-            return ResponseEntity.status(500).body("Error al subir imagen");
+            return ResponseEntity
+                    .status(500)
+                    .body("Error al subir imagen");
         }
     }
 }
